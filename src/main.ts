@@ -1,9 +1,13 @@
 import schedule from "node-schedule";
 import { AutoBuyer } from "./auto-buyer";
+import dotenv from "dotenv";
 
-console.log("Started auto-buyer!");
+dotenv.config();
 
-const autobuy = new AutoBuyer();
-autobuy.buy();
+const autoBuyer = new AutoBuyer();
+autoBuyer.buy();
 
-// schedule.scheduleJob("* * * * *", () => autobuy.buy());
+const cron = process.env["DEGIRO_SCHEDULE"] ?? "0 12 1 * *";
+// schedule.scheduleJob(cron, () => autoBuyer.buy());
+
+console.log(`Started DEGIRO Autobuy with cron schedule "${cron}"`);

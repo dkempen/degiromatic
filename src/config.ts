@@ -5,11 +5,11 @@ export interface Config {
   allowOpenOrders: boolean;
   useMargin: boolean;
   divideEqually: boolean;
-  desiredPortfolio: DesiredPortfolio[];
+  desiredPortfolio: Product[];
   demo: boolean;
 }
 
-export interface DesiredPortfolio {
+export interface Product {
   symbol: string;
   isin: string;
   ratio: number;

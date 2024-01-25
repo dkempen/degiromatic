@@ -2,13 +2,11 @@ export async function delay(ms: number) {
   new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-export function getTotalValue(products: any[], key: string) {
-  let start = {};
-  return 0;
-  // start[key] = 0;
-  // return products.reduce((a, b) => {
-  //   let res = {};
-  //   res[key] = a[key] + (b[key] ? b[key] : 0);
-  //   return res;
-  // }, start)[key];
+export function getSumOfProperty<T>(
+  products: T[],
+  property: (product: T) => any
+): number {
+  let sum = 0;
+  products.forEach((p) => (sum += property(p)));
+  return sum;
 }

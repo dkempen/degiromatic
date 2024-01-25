@@ -1,6 +1,3 @@
-import fs from "fs";
-import dotenv from "dotenv";
-import { delay, getTotalValue } from "./util";
 import DeGiro from "degiro-api";
 import {
   DeGiroActions,
@@ -10,18 +7,14 @@ import {
   PORTFOLIO_POSITIONS_TYPE_ENUM,
 } from "degiro-api/dist/enums";
 import { OrderType } from "degiro-api/dist/types";
+import fs from "fs";
 import { authenticator } from "otplib";
 import { Config } from "./config";
+import { delay, getSumOfProperty } from "./util";
 
 export class AutoBuyer {
-  constructor() {
-    dotenv.config();
-  }
-
   async buy() {
-    console.log(
-      `Started degiro-autobuy script at ${new Date().toLocaleString()}`
-    );
+    console.log(`Started DEGIRO Autobuy at ${new Date().toLocaleString()}`);
 
     let config: Config;
 
@@ -36,7 +29,10 @@ export class AutoBuyer {
     // TODO: Validate required properties
 
     // Process some things from config: Calculate ratios for desired portfolio
-    const totalRatio = getTotalValue(config.desiredPortfolio, "ratio");
+    const totalRatio = getSumOfProperty(
+      config.desiredPortfolio,
+      (x) => x.ratio
+    );
     config.desiredPortfolio.forEach((el) => (el.ratio = el.ratio / totalRatio));
 
     console.log(
@@ -57,14 +53,22 @@ export class AutoBuyer {
 
     // New Degiro
     const secret = process.env["DEGIRO_OTP_SECRET"];
-    const degiro = new DeGiro({
+    let degiro = new DeGiro({
       oneTimePassword: secret ? authenticator.generate(secret) : undefined,
       jsessionId: session,
     });
 
     // Login
     console.log("Logging in ...");
-    await degiro.login();
+    try {
+      await degiro.login();
+    } catch (e) {
+      // Session ID is invalid, login with username and password
+      degiro = new DeGiro({
+        oneTimePassword: secret ? authenticator.generate(secret) : undefined,
+      });
+      await degiro.login();
+    }
 
     if (!degiro.isLogin()) {
       console.error("Invalid credentials");
@@ -122,7 +126,7 @@ export class AutoBuyer {
     );
 
     // Get total value of all ETF's in portfolio
-    const totalETFValue = getTotalValue(ownedEtfs, "value");
+    const totalETFValue = getSumOfProperty(ownedEtfs, (x) => x.value);
 
     let coreEtfs: any[] = [];
     let paidEtfs: any[] = [];
@@ -147,7 +151,7 @@ export class AutoBuyer {
       );
 
       // Calculate owned ratio in relation to total ETF value of portfolio
-      const ownedEtfValue = getTotalValue(matchingOwnedEtfs, "value");
+      const ownedEtfValue = getSumOfProperty(matchingOwnedEtfs, (x) => x.value);
       const ownedEtfValueRatio =
         ownedEtfValue / (totalETFValue + investableCash);
 
@@ -249,9 +253,9 @@ export class AutoBuyer {
       // Determine amounts
       while (true) {
         const cashPerEtf = investableCash / coreEtfs.length;
-        const coreEtfsTotalNeededRatio = getTotalValue(
+        const coreEtfsTotalNeededRatio = getSumOfProperty(
           coreEtfs,
-          "ratioDifference"
+          (x) => x.ratioDifference
         );
         let ready = true;
 

@@ -11,6 +11,7 @@ import fs from "fs";
 import { authenticator } from "otplib";
 import { Config } from "./config";
 import { delay, getSumOfProperty } from "./util";
+import { BuyInfo } from "./buy-info";
 
 export class AutoBuyer {
   async buy() {
@@ -33,7 +34,7 @@ export class AutoBuyer {
       config.desiredPortfolio,
       (x) => x.ratio
     );
-    config.desiredPortfolio.forEach((el) => (el.ratio = el.ratio / totalRatio));
+    config.desiredPortfolio.forEach((x) => (x.ratio = x.ratio / totalRatio));
 
     console.log(
       `Desired portfolio: ${config.desiredPortfolio
@@ -45,6 +46,7 @@ export class AutoBuyer {
     let session;
     try {
       session = fs.readFileSync("session", "utf8");
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (e: any) {
       if (e.code !== "ENOENT") {
         console.log(`Error while reading session file: ${e}`);
@@ -128,8 +130,8 @@ export class AutoBuyer {
     // Get total value of all ETF's in portfolio
     const totalETFValue = getSumOfProperty(ownedEtfs, (x) => x.value);
 
-    let coreEtfs: any[] = [];
-    let paidEtfs: any[] = [];
+    const coreEtfs: BuyInfo[] = [];
+    const paidEtfs: BuyInfo[] = [];
 
     // Check order history for open order if open orders are not allowed
     if (!config.allowOpenOrders) {
@@ -141,7 +143,7 @@ export class AutoBuyer {
     }
 
     // Loop over wanted ETF's, see if ratio is below wanted ratio
-    for (let etf of config.desiredPortfolio) {
+    for (const etf of config.desiredPortfolio) {
       // Find current ETF in owned ETF's
       const matchingOwnedEtfs = ownedEtfs.filter(
         (ownedEtf) =>
@@ -173,7 +175,8 @@ export class AutoBuyer {
           2
         )} wanted ratio, adding to buy list.`
       );
-      etf.ratioDifference = etf.ratio - ownedEtfValue;
+
+      const ratioDifference = etf.ratio - ownedEtfValue;
 
       // Search product
       const matchingProducts = (
@@ -208,34 +211,36 @@ export class AutoBuyer {
 
       if (
         etf.degiroCore &&
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         !(order as any).messages.includes(
           "trader.orderConfirmation.freeETFCommissionNotice"
         )
       ) {
         console.log(
-          `Symbol ${etf.symbol} (${etf.isin}) on exchange ${product.exchangeId} is in DeGiro core selection, but does not have core selection transaction fees, ignoring.`
+          `Symbol ${etf.symbol} (${etf.isin}) on exchange ${product.exchangeId} is in DeGiro core selection, 
+          but does not have core selection transaction fees, ignoring.`
         );
         continue;
       }
 
-      let result = { ...etf, ...order, ...product };
+      const buyInfo: BuyInfo = { product, ratioDifference };
 
       if (etf.degiroCore) {
-        coreEtfs.push(result);
+        coreEtfs.push(buyInfo);
       } else {
-        paidEtfs.push(result);
+        paidEtfs.push(buyInfo);
       }
     }
 
     console.log();
     console.log(
       `Core ETF's eligible for buying: ${coreEtfs
-        .map((el) => el.symbol)
+        .map((x) => x.product.symbol)
         .join(", ")}`
     );
     console.log(
       `Paid ETF's eligible for buying: ${paidEtfs
-        .map((el) => el.symbol)
+        .map((x) => x.product.symbol)
         .join(", ")}`
     );
     console.log();
@@ -251,20 +256,23 @@ export class AutoBuyer {
       );
 
       // Determine amounts
-      while (true) {
+      let ready = false;
+
+      while (ready) {
         const cashPerEtf = investableCash / coreEtfs.length;
         const coreEtfsTotalNeededRatio = getSumOfProperty(
           coreEtfs,
-          (x) => x.ratioDifference
+          (x) => x.ratioDifference!
         );
-        let ready = true;
 
-        for (let etf of coreEtfs) {
-          const ratio = etf.ratioDifference / coreEtfsTotalNeededRatio;
+        ready = true;
+
+        for (const etf of coreEtfs) {
+          const ratio = etf.ratioDifference! / coreEtfsTotalNeededRatio;
           const amount = Math.floor(
             config.divideEqually
-              ? cashPerEtf / etf.closePrice
-              : (ratio * investableCash) / etf.closePrice
+              ? cashPerEtf / etf.product.closePrice
+              : (ratio * investableCash) / etf.product.closePrice
           );
 
           if (amount > 0) {
@@ -272,35 +280,34 @@ export class AutoBuyer {
           } else {
             ready = false;
             console.log(
-              `Cancel order for ${amount} * ${etf.symbol}, amount is 0`
+              `Cancel order for ${amount} * ${etf.product.symbol}, amount is 0`
             );
             coreEtfs.splice(coreEtfs.indexOf(etf), 1);
             break;
           }
         }
-        if (ready) break;
       }
 
-      for (let etf of coreEtfs) {
+      for (const etf of coreEtfs) {
         // Calculate amount
-        if (etf.amountToBuy < 1) {
+        if (!etf.amountToBuy || etf.amountToBuy < 1) {
           continue;
         }
 
         await delay(1000);
 
-        let confirmation = await placeOrder({
+        const confirmation = await placeOrder({
           buySell: DeGiroActions.BUY,
-          productId: etf.id,
+          productId: etf.product.id,
           orderType: DeGiroMarketOrderTypes.MARKET,
           size: etf.amountToBuy,
           timeType: DeGiroTimeTypes.PERMANENT,
         });
         console.log(
           `Succesfully placed market order for ${etf.amountToBuy} * ${
-            etf.symbol
-          } for ${(etf.closePrice * etf.amountToBuy).toFixed(2)} ${
-            etf.currency
+            etf.product.symbol
+          } for ${(etf.product.closePrice * etf.amountToBuy).toFixed(2)} ${
+            etf.product.currency
           } (${confirmation})`
         );
       }
@@ -309,29 +316,31 @@ export class AutoBuyer {
       const etf = paidEtfs[0];
 
       if (etf) {
-        console.log(`Choosing to buy a single paid ETF: ${etf.symbol}`);
+        console.log(`Choosing to buy a single paid ETF: ${etf.product.symbol}`);
 
         // Calculate amount
-        const amount = Math.floor(investableCash / etf.closePrice);
+        const amount = Math.floor(investableCash / etf.product.closePrice);
 
         await delay(2000);
-        let confirmation = await placeOrder({
+        const confirmation = await placeOrder({
           buySell: DeGiroActions.BUY,
-          productId: etf.id,
+          productId: etf.product.id,
           orderType: DeGiroMarketOrderTypes.MARKET,
+          timeType: DeGiroTimeTypes.DAY,
           size: amount,
         });
         console.log(
-          `Succesfully placed market order for ${amount} * ${etf.symbol} (${confirmation})`
+          `Succesfully placed market order for ${amount} * ${etf.product.symbol} (${confirmation})`
         );
       } else {
         console.log(`No Paid ETF to buy either`);
       }
     }
 
-    async function placeOrder(orderType: any) {
+    async function placeOrder(orderType: OrderType) {
       if (config.demo === true) return "demo";
 
+      console.log(orderType);
       // const order = await degiro.createOrder(orderType);
       // const confirmation = await degiro.executeOrder(
       //   orderType,

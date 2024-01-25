@@ -5,15 +5,14 @@ export interface Config {
   allowOpenOrders: boolean;
   useMargin: boolean;
   divideEqually: boolean;
-  desiredPortfolio: Product[];
+  desiredPortfolio: Etf[];
   demo: boolean;
 }
 
-export interface Product {
+export interface Etf {
   symbol: string;
   isin: string;
   ratio: number;
-  ratioDifference?: number;
   exchangeId: number;
   degiroCore: boolean;
 }

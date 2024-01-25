@@ -4,7 +4,7 @@ export async function delay(ms: number) {
 
 export function getSumOfProperty<T>(
   products: T[],
-  property: (product: T) => any
+  property: (product: T) => number
 ): number {
   let sum = 0;
   products.forEach((p) => (sum += property(p)));

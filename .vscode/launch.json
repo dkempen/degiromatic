@@ -8,10 +8,11 @@
       "type": "node",
       "request": "launch",
       "name": "Start",
-      "skipFiles": [
-        "<node_internals>/**"
-      ],
-      "program": "${workspaceFolder}\\start-single.js"
+      "program": "${workspaceFolder}/src/main.ts",
+      // "preLaunchTask": "tsc: build - tsconfig.json",
+      "outFiles": [
+        "${workspaceFolder}/dist/**/*.js"
+      ]
     }
   ]
 }

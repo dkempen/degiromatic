@@ -2,24 +2,22 @@
   "name": "degiro-autobuy",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "main.js",
   "scripts": {
-    "start": "npm run single",
-    "single": "node start-single",
-    "loop": "node start-loop",
-    "search": "node start-search",
-    "breakeven": "node start-breakeven",
-    "deploy": "gcloud functions deploy autobuy-script --entry-point runScript --region europe-west1 --trigger-topic degiro-autobuy-topic"
+    "start": "node ./dist/main.js",
+    "tsc": "tsc",
+    "postinstall": "npm run tsc",
+    "dev": "ts-node-dev --respawn --pretty --transpile-only src/main.ts"
   },
-  "author": "",
-  "license": "ISC",
   "dependencies": {
-    "cron": "^3.1.6",
-    "cron-parser": "^4.9.0",
     "degiro-api": "^1.0.4",
     "dotenv": "^16.4.1",
-    "import-fresh": "^3.3.0",
-    "inquirer": "^9.2.12",
+    "node-schedule": "^2.1.1",
     "otplib": "^12.0.1"
+  },
+  "devDependencies": {
+    "@types/node-schedule": "^2.1.5",
+    "ts-node-dev": "^2.0.0",
+    "typescript": "^5.3.3"
   }
 }

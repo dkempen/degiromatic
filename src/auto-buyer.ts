@@ -1,27 +1,45 @@
-import DeGiro from "degiro-api";
-import {
-  DeGiroActions,
-  DeGiroMarketOrderTypes,
-  DeGiroProducTypes as DeGiroProductTypes,
-  DeGiroTimeTypes,
-  PORTFOLIO_POSITIONS_TYPE_ENUM,
-} from "degiro-api/dist/enums";
-import { OrderType } from "degiro-api/dist/types";
 import fs from "fs";
-import { authenticator } from "otplib";
-import { Config } from "./config";
-import { delay, getSumOfProperty } from "./util";
 import { BuyInfo } from "./buy-info";
+import { Config } from "./config";
+import {
+  CONFIG_FILE,
+  DEGIRO_OTP_SEED,
+  DEGIRO_PASSWORD,
+  DEGIRO_USERNAME,
+} from "./constants";
+import { DegiroClient } from "./degiro-client";
+import { delay, exitProcess, getSumOfProperty } from "./util";
 
 export class AutoBuyer {
+  private degiroClient: DegiroClient;
+
+  constructor() {
+    const username = process.env[DEGIRO_USERNAME];
+    const password = process.env[DEGIRO_PASSWORD];
+    const otpSecret = process.env[DEGIRO_OTP_SEED];
+
+    if (!username) {
+      throw new Error(
+        "No username provided. Please add it to the environment variables."
+      );
+    }
+    if (!password) {
+      throw new Error(
+        "No username provided. Please add it to the environment variables."
+      );
+    }
+
+    this.degiroClient = new DegiroClient(username, password, otpSecret);
+  }
+
   async buy() {
-    console.log(`Started DEGIRO Autobuy at ${new Date().toLocaleString()}`);
+    console.log(`\nStarted DEGIRO Autobuy at ${new Date().toLocaleString()}`);
 
     let config: Config;
 
     // Read config file
     try {
-      const raw = fs.readFileSync("config.json", "utf8");
+      const raw = fs.readFileSync(CONFIG_FILE, "utf8");
       config = JSON.parse(raw);
     } catch (e) {
       console.log(`Error while reading config file: ${e}`);
@@ -42,54 +60,15 @@ export class AutoBuyer {
         .join(", ")}`
     );
 
-    // Read session file
-    let session;
-    try {
-      session = fs.readFileSync("session", "utf8");
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (e: any) {
-      if (e.code !== "ENOENT") {
-        console.log(`Error while reading session file: ${e}`);
-      }
-    }
-
-    // New Degiro
-    const secret = process.env["DEGIRO_OTP_SECRET"];
-    let degiro = new DeGiro({
-      oneTimePassword: secret ? authenticator.generate(secret) : undefined,
-      jsessionId: session,
-    });
-
     // Login
-    console.log("Logging in ...");
     try {
-      await degiro.login();
-    } catch (e) {
-      // Session ID is invalid, login with username and password
-      degiro = new DeGiro({
-        oneTimePassword: secret ? authenticator.generate(secret) : undefined,
-      });
-      await degiro.login();
-    }
-
-    if (!degiro.isLogin()) {
-      console.error("Invalid credentials");
-      return;
-    }
-
-    const jsession = degiro.getJSESSIONID();
-    if (jsession && jsession !== session) {
-      try {
-        fs.writeFileSync("session", jsession, "utf8");
-      } catch (e) {
-        console.log(`Error while writing session file: ${e}`);
-      }
+      await this.degiroClient.login();
+    } catch (error) {
+      exitProcess(error);
     }
 
     // Get cash funds
-    const cash = (await degiro.getCashFunds()).filter(
-      (type) => type.currencyCode === config.cashCurrency
-    )[0].value;
+    const cash = await this.degiroClient.getCashFunds(config.cashCurrency);
 
     // If cash funds is high enough -> continue
     if (cash < config.minCashInvest && !config.useMargin) {
@@ -110,12 +89,9 @@ export class AutoBuyer {
     );
 
     // Get portfolio
-    const portfolio = await degiro.getPortfolio({
-      type: PORTFOLIO_POSITIONS_TYPE_ENUM.ALL,
-      getProductDetails: true,
-    });
+    const portfolio = await this.degiroClient.getPortfolio();
 
-    // Filter existing portfolio ETF's from desired portfolio in config
+    // Filter existing portfolio ETFs from desired portfolio in config
     const ownedEtfs = portfolio.filter(
       (etf) =>
         etf.positionType === "PRODUCT" &&
@@ -127,7 +103,7 @@ export class AutoBuyer {
         )
     );
 
-    // Get total value of all ETF's in portfolio
+    // Get total value of all ETFs in portfolio
     const totalETFValue = getSumOfProperty(ownedEtfs, (x) => x.value);
 
     const coreEtfs: BuyInfo[] = [];
@@ -135,16 +111,16 @@ export class AutoBuyer {
 
     // Check order history for open order if open orders are not allowed
     if (!config.allowOpenOrders) {
-      const openOrders = (await degiro.getOrders({ active: true })).orders;
-      if (openOrders.length) {
+      const hasOpenOrders = await this.degiroClient.hasOpenOrders();
+      if (hasOpenOrders) {
         console.log(`There are currently open orders, doing nothing.`);
         return;
       }
     }
 
-    // Loop over wanted ETF's, see if ratio is below wanted ratio
+    // Loop over wanted ETFs, see if ratio is below wanted ratio
     for (const etf of config.desiredPortfolio) {
-      // Find current ETF in owned ETF's
+      // Find current ETF in owned ETFs
       const matchingOwnedEtfs = ownedEtfs.filter(
         (ownedEtf) =>
           ownedEtf.productData &&
@@ -179,18 +155,10 @@ export class AutoBuyer {
       const ratioDifference = etf.ratio - ownedEtfValue;
 
       // Search product
-      const matchingProducts = (
-        await degiro.searchProduct({
-          type: DeGiroProductTypes.etfs,
-          text: etf.isin,
-        })
-      ).filter((product) => {
-        return (
-          etf.isin.toLowerCase() === product.isin.toLowerCase() &&
-          product.exchangeId === etf.exchangeId.toString()
-        );
-      });
-      const product = matchingProducts[0];
+      const product = await this.degiroClient.searchProduct(
+        etf.isin,
+        etf.exchangeId
+      );
       if (!product) {
         console.error(
           `Did not find matching product for symbol ${etf.symbol} (${etf.isin}) on exchange ${etf.exchangeId}`
@@ -198,27 +166,12 @@ export class AutoBuyer {
         continue;
       }
 
-      // Create order to check transaction fees
-      const orderType: OrderType = {
-        buySell: DeGiroActions.BUY,
-        productId: product.id,
-        orderType: DeGiroMarketOrderTypes.LIMITED,
-        size: 1, // Doesn't matter, just checking transaction fees
-        price: 0.01,
-        timeType: DeGiroTimeTypes.DAY,
-      };
-      const order = await degiro.createOrder(orderType);
-
       if (
         etf.degiroCore &&
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        !(order as any).messages.includes(
-          "trader.orderConfirmation.freeETFCommissionNotice"
-        )
+        !(await this.degiroClient.isInCoreSelection(product.id))
       ) {
         console.log(
-          `Symbol ${etf.symbol} (${etf.isin}) on exchange ${product.exchangeId} is in DeGiro core selection, 
-          but does not have core selection transaction fees, ignoring.`
+          `Symbol ${etf.symbol} (${etf.isin}) on exchange ${product.exchangeId} is in DEGIRO core selection, but does not have core selection transaction fees, ignoring.`
         );
         continue;
       }
@@ -234,23 +187,23 @@ export class AutoBuyer {
 
     console.log();
     console.log(
-      `Core ETF's eligible for buying: ${coreEtfs
+      `Core ETFs eligible for buying: ${coreEtfs
         .map((x) => x.product.symbol)
         .join(", ")}`
     );
     console.log(
-      `Paid ETF's eligible for buying: ${paidEtfs
+      `Paid ETFs eligible for buying: ${paidEtfs
         .map((x) => x.product.symbol)
         .join(", ")}`
     );
     console.log();
 
-    // Either select all eligible core ETF's for buying, or the first paid one
+    // Either select all eligible core ETFs for buying, or the first paid one
     if (coreEtfs.length > 0) {
-      // Place orders for all core ETF's
+      // Place orders for all core ETFs
 
       console.log(
-        `Choosing to buy core ETF's (DeGiro Core selection), dividing available cash ${
+        `Choosing to buy core ETFs (DEGIRO Core selection), dividing available cash ${
           config.divideEqually ? "equally" : "by wanted ratio"
         }`
       );
@@ -258,7 +211,7 @@ export class AutoBuyer {
       // Determine amounts
       let ready = false;
 
-      while (ready) {
+      while (!ready) {
         const cashPerEtf = investableCash / coreEtfs.length;
         const coreEtfsTotalNeededRatio = getSumOfProperty(
           coreEtfs,
@@ -296,15 +249,13 @@ export class AutoBuyer {
 
         await delay(1000);
 
-        const confirmation = await placeOrder({
-          buySell: DeGiroActions.BUY,
-          productId: etf.product.id,
-          orderType: DeGiroMarketOrderTypes.MARKET,
-          size: etf.amountToBuy,
-          timeType: DeGiroTimeTypes.PERMANENT,
-        });
+        const confirmation = await this.degiroClient.placeOrder(
+          etf.product.id,
+          etf.amountToBuy,
+          config.dryRun
+        );
         console.log(
-          `Succesfully placed market order for ${etf.amountToBuy} * ${
+          `Successfully placed market order for ${etf.amountToBuy} * ${
             etf.product.symbol
           } for ${(etf.product.closePrice * etf.amountToBuy).toFixed(2)} ${
             etf.product.currency
@@ -322,31 +273,19 @@ export class AutoBuyer {
         const amount = Math.floor(investableCash / etf.product.closePrice);
 
         await delay(2000);
-        const confirmation = await placeOrder({
-          buySell: DeGiroActions.BUY,
-          productId: etf.product.id,
-          orderType: DeGiroMarketOrderTypes.MARKET,
-          timeType: DeGiroTimeTypes.DAY,
-          size: amount,
-        });
+        const confirmation = await this.degiroClient.placeOrder(
+          etf.product.id,
+          amount,
+          config.dryRun
+        );
         console.log(
-          `Succesfully placed market order for ${amount} * ${etf.product.symbol} (${confirmation})`
+          `Successfully placed market order for ${amount} x ${etf.product.symbol} (${confirmation})`
         );
       } else {
         console.log(`No Paid ETF to buy either`);
       }
     }
 
-    async function placeOrder(orderType: OrderType) {
-      if (config.demo === true) return "demo";
-
-      console.log(orderType);
-      // const order = await degiro.createOrder(orderType);
-      // const confirmation = await degiro.executeOrder(
-      //   orderType,
-      //   order.confirmationId
-      // );
-      // return confirmation;
-    }
+    console.log(`Finished DEGIRO Autobuy at ${new Date().toLocaleString()}\n`);
   }
 }

@@ -6,7 +6,7 @@ export interface Config {
   useMargin: boolean;
   divideEqually: boolean;
   desiredPortfolio: Etf[];
-  demo: boolean;
+  dryRun: boolean;
 }
 
 export interface Etf {

@@ -4,9 +4,9 @@
   "description": "",
   "main": "main.js",
   "scripts": {
-    "start": "node ./dist/main.js",
-    "tsc": "tsc",
-    "postinstall": "npm run tsc",
+    "start": "npm run build && node ./dist/main.js",
+    "build": "tsc",
+    "postinstall": "npm run build",
     "dev": "ts-node-dev --respawn --pretty --transpile-only src/main.ts",
     "lint": "eslint . --ext .ts"
   },

@@ -10,3 +10,9 @@ export function getSumOfProperty<T>(
   products.forEach((p) => (sum += property(p)));
   return sum;
 }
+
+export function exitProcess(error: unknown): number {
+  const message = error instanceof Error ? error.message : "Unknown Error";
+  console.error(message);
+  process.exit(1);
+}

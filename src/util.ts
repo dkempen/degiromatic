@@ -1,3 +1,6 @@
+import { Logger } from "winston";
+import { CONFIG_DIRECTORY_DEFAULT, CONFIG_DIRECTORY_ENV } from "./constants";
+
 export async function delay(ms: number) {
   new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -11,8 +14,12 @@ export function getSumOfProperty<T>(
   return sum;
 }
 
-export function exitProcess(error: unknown): number {
+export function exitProcess(logger: Logger, error: unknown): number {
   const message = error instanceof Error ? error.message : "Unknown Error";
-  console.error(message);
+  logger.error(message);
   process.exit(1);
+}
+
+export function getConfigDirectory() {
+  return process.env[CONFIG_DIRECTORY_ENV] ?? CONFIG_DIRECTORY_DEFAULT;
 }

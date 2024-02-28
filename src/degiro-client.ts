@@ -9,21 +9,19 @@ import {
 import { OrderType, SearchProductResultType } from "degiro-api/dist/types";
 import fs from "fs";
 import { authenticator } from "otplib";
+import { Logger } from "winston";
 import { SESSION_FILE } from "./constants";
 
 export class DegiroClient {
   private degiro!: DeGiro;
-
-  private username: string;
-  private password: string;
-  private otpSecret: string | undefined;
   private session: string | undefined;
 
-  constructor(username: string, password: string, otpSecret?: string) {
-    this.username = username;
-    this.password = password;
-    this.otpSecret = otpSecret;
-  }
+  constructor(
+    private logger: Logger,
+    private username: string,
+    private password: string,
+    private otpSecret?: string
+  ) {}
 
   public async login() {
     if (this.degiro?.isLogin()) {
@@ -39,7 +37,7 @@ export class DegiroClient {
       jsessionId: this.session,
     });
 
-    console.log("Logging in");
+    this.logger.info("Logging in");
     try {
       await this.degiro.login();
     } catch (e) {
@@ -74,7 +72,7 @@ export class DegiroClient {
     }
 
     this.saveSession();
-    console.log("Successfully logged in");
+    this.logger.info("Successfully logged in");
   }
 
   public async getCashFunds(currency: string): Promise<number> {
@@ -139,9 +137,11 @@ export class DegiroClient {
     amount: number,
     dryRun = true
   ): Promise<string> {
-    if (dryRun) return "Dry run. Not placing an actual order.";
+    if (dryRun) {
+      return "Dry run. Not placing an actual order.";
+    }
 
-    console.log(`Buying ${amount} of ${productId}`);
+    this.logger.info(`Buying ${amount} of ${productId}`);
     const orderType: OrderType = {
       buySell: DeGiroActions.BUY,
       productId: productId,
@@ -167,7 +167,7 @@ export class DegiroClient {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (e: any) {
       if (e.code !== "ENOENT") {
-        console.log(`Error while reading session file: ${e}`);
+        this.logger.error(`Error while reading session file: ${e}`);
       }
     }
   }
@@ -178,7 +178,7 @@ export class DegiroClient {
       try {
         fs.writeFileSync(SESSION_FILE, jsession, "utf8");
       } catch (e) {
-        console.log(`Error while writing session file: ${e}`);
+        this.logger.error(`Error while writing session file: ${e}`);
       }
     }
   }

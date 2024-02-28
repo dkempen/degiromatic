@@ -11,6 +11,7 @@
       "program": "${workspaceFolder}/src/main.ts",
       "preLaunchTask": "npm: build",
       "internalConsoleOptions": "openOnSessionStart",
+      "outputCapture": "std",
       "outFiles": [
         "${workspaceFolder}/dist/**/*.js"
       ]

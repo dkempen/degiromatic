@@ -1,22 +1,25 @@
-import fs from "fs";
+import { Logger } from "winston";
 import { BuyInfo } from "./buy-info";
 import { Config } from "./config";
+import { ConfigLoader } from "./config-loader";
 import {
-  CONFIG_FILE,
-  DEGIRO_OTP_SEED,
-  DEGIRO_PASSWORD,
-  DEGIRO_USERNAME,
+  DEGIRO_OTP_SEED_ENV,
+  DEGIRO_PASSWORD_ENV,
+  DEGIRO_USERNAME_ENV,
 } from "./constants";
 import { DegiroClient } from "./degiro-client";
 import { delay, exitProcess, getSumOfProperty } from "./util";
 
 export class AutoBuyer {
+  private config: Config;
   private degiroClient: DegiroClient;
 
-  constructor() {
-    const username = process.env[DEGIRO_USERNAME];
-    const password = process.env[DEGIRO_PASSWORD];
-    const otpSecret = process.env[DEGIRO_OTP_SEED];
+  constructor(private logger: Logger, configLoader: ConfigLoader) {
+    this.config = configLoader.config;
+
+    const username = process.env[DEGIRO_USERNAME_ENV];
+    const password = process.env[DEGIRO_PASSWORD_ENV];
+    const otpSecret = process.env[DEGIRO_OTP_SEED_ENV];
 
     if (!username) {
       throw new Error(
@@ -25,37 +28,29 @@ export class AutoBuyer {
     }
     if (!password) {
       throw new Error(
-        "No username provided. Please add it to the environment variables."
+        "No password provided. Please add it to the environment variables."
       );
     }
 
-    this.degiroClient = new DegiroClient(username, password, otpSecret);
+    this.degiroClient = new DegiroClient(logger, username, password, otpSecret);
   }
 
-  async buy() {
-    console.log(`\nStarted DEGIRO Autobuy at ${new Date().toLocaleString()}`);
-
-    let config: Config;
-
-    // Read config file
-    try {
-      const raw = fs.readFileSync(CONFIG_FILE, "utf8");
-      config = JSON.parse(raw);
-    } catch (e) {
-      console.log(`Error while reading config file: ${e}`);
-      return;
-    }
-    // TODO: Validate required properties
+  public async buy() {
+    this.logger.info(
+      `Started DEGIRO Autobuy at ${new Date().toLocaleString()}`
+    );
 
     // Process some things from config: Calculate ratios for desired portfolio
     const totalRatio = getSumOfProperty(
-      config.desiredPortfolio,
+      this.config.desiredPortfolio,
       (x) => x.ratio
     );
-    config.desiredPortfolio.forEach((x) => (x.ratio = x.ratio / totalRatio));
+    this.config.desiredPortfolio.forEach(
+      (x) => (x.ratio = x.ratio / totalRatio)
+    );
 
-    console.log(
-      `Desired portfolio: ${config.desiredPortfolio
+    this.logger.info(
+      `Desired portfolio: ${this.config.desiredPortfolio
         .map((etf) => `${etf.symbol} (${(etf.ratio * 100).toFixed(2)}%)`)
         .join(", ")}`
     );
@@ -64,28 +59,28 @@ export class AutoBuyer {
     try {
       await this.degiroClient.login();
     } catch (error) {
-      exitProcess(error);
+      exitProcess(this.logger, error);
     }
 
     // Get cash funds
-    const cash = await this.degiroClient.getCashFunds(config.cashCurrency);
+    const cash = await this.degiroClient.getCashFunds(this.config.cashCurrency);
 
     // If cash funds is high enough -> continue
-    if (cash < config.minCashInvest && !config.useMargin) {
-      console.log(
-        `Cash in account (${cash} ${config.cashCurrency}) is less than minimum cash funds (${config.minCashInvest} ${config.cashCurrency}).`
+    if (cash < this.config.minCashInvest && !this.config.useMargin) {
+      this.logger.info(
+        `Cash in account (${cash} ${this.config.cashCurrency}) is less than minimum cash funds (${this.config.minCashInvest} ${this.config.cashCurrency}).`
       );
       return;
     }
 
-    const maxInvestableCash = Math.min(config.maxCashInvest, cash);
+    const maxInvestableCash = Math.min(this.config.maxCashInvest, cash);
 
-    const investableCash = config.useMargin
-      ? Math.max(config.minCashInvest, maxInvestableCash)
+    const investableCash = this.config.useMargin
+      ? Math.max(this.config.minCashInvest, maxInvestableCash)
       : maxInvestableCash;
 
-    console.log(
-      `Cash in account: ${cash} ${config.cashCurrency}, limiting investment to ${investableCash} ${config.cashCurrency}`
+    this.logger.info(
+      `Cash in account: ${cash} ${this.config.cashCurrency}, limiting investment to ${investableCash} ${this.config.cashCurrency}`
     );
 
     // Get portfolio
@@ -96,7 +91,7 @@ export class AutoBuyer {
       (etf) =>
         etf.positionType === "PRODUCT" &&
         etf.productData &&
-        config.desiredPortfolio.some(
+        this.config.desiredPortfolio.some(
           (desiredEtf) =>
             desiredEtf.isin === etf.productData.isin &&
             desiredEtf.symbol === etf.productData.symbol
@@ -110,16 +105,16 @@ export class AutoBuyer {
     const paidEtfs: BuyInfo[] = [];
 
     // Check order history for open order if open orders are not allowed
-    if (!config.allowOpenOrders) {
+    if (!this.config.allowOpenOrders) {
       const hasOpenOrders = await this.degiroClient.hasOpenOrders();
       if (hasOpenOrders) {
-        console.log(`There are currently open orders, doing nothing.`);
+        this.logger.info(`There are currently open orders, doing nothing.`);
         return;
       }
     }
 
     // Loop over wanted ETFs, see if ratio is below wanted ratio
-    for (const etf of config.desiredPortfolio) {
+    for (const etf of this.config.desiredPortfolio) {
       // Find current ETF in owned ETFs
       const matchingOwnedEtfs = ownedEtfs.filter(
         (ownedEtf) =>
@@ -134,7 +129,7 @@ export class AutoBuyer {
         ownedEtfValue / (totalETFValue + investableCash);
 
       if (ownedEtfValueRatio >= etf.ratio) {
-        console.log(
+        this.logger.info(
           `Symbol ${etf.symbol} (${
             etf.isin
           }): actual ratio ${ownedEtfValueRatio.toFixed(
@@ -144,7 +139,7 @@ export class AutoBuyer {
         continue;
       }
 
-      console.log(
+      this.logger.info(
         `Symbol ${etf.symbol} (${
           etf.isin
         }): actual ratio ${ownedEtfValueRatio.toFixed(2)} < ${etf.ratio.toFixed(
@@ -160,7 +155,7 @@ export class AutoBuyer {
         etf.exchangeId
       );
       if (!product) {
-        console.error(
+        this.logger.error(
           `Did not find matching product for symbol ${etf.symbol} (${etf.isin}) on exchange ${etf.exchangeId}`
         );
         continue;
@@ -170,7 +165,7 @@ export class AutoBuyer {
         etf.degiroCore &&
         !(await this.degiroClient.isInCoreSelection(product.id))
       ) {
-        console.log(
+        this.logger.info(
           `Symbol ${etf.symbol} (${etf.isin}) on exchange ${product.exchangeId} is in DEGIRO core selection, but does not have core selection transaction fees, ignoring.`
         );
         continue;
@@ -185,26 +180,24 @@ export class AutoBuyer {
       }
     }
 
-    console.log();
-    console.log(
+    this.logger.info(
       `Core ETFs eligible for buying: ${coreEtfs
         .map((x) => x.product.symbol)
         .join(", ")}`
     );
-    console.log(
+    this.logger.info(
       `Paid ETFs eligible for buying: ${paidEtfs
         .map((x) => x.product.symbol)
         .join(", ")}`
     );
-    console.log();
 
     // Either select all eligible core ETFs for buying, or the first paid one
     if (coreEtfs.length > 0) {
       // Place orders for all core ETFs
 
-      console.log(
+      this.logger.info(
         `Choosing to buy core ETFs (DEGIRO Core selection), dividing available cash ${
-          config.divideEqually ? "equally" : "by wanted ratio"
+          this.config.divideEqually ? "equally" : "by wanted ratio"
         }`
       );
 
@@ -223,7 +216,7 @@ export class AutoBuyer {
         for (const etf of coreEtfs) {
           const ratio = etf.ratioDifference! / coreEtfsTotalNeededRatio;
           const amount = Math.floor(
-            config.divideEqually
+            this.config.divideEqually
               ? cashPerEtf / etf.product.closePrice
               : (ratio * investableCash) / etf.product.closePrice
           );
@@ -232,8 +225,8 @@ export class AutoBuyer {
             etf.amountToBuy = amount;
           } else {
             ready = false;
-            console.log(
-              `Cancel order for ${amount} * ${etf.product.symbol}, amount is 0`
+            this.logger.info(
+              `Cancel order for ${amount} x ${etf.product.symbol}, amount is 0`
             );
             coreEtfs.splice(coreEtfs.indexOf(etf), 1);
             break;
@@ -252,9 +245,9 @@ export class AutoBuyer {
         const confirmation = await this.degiroClient.placeOrder(
           etf.product.id,
           etf.amountToBuy,
-          config.dryRun
+          this.config.dryRun
         );
-        console.log(
+        this.logger.info(
           `Successfully placed market order for ${etf.amountToBuy} * ${
             etf.product.symbol
           } for ${(etf.product.closePrice * etf.amountToBuy).toFixed(2)} ${
@@ -267,7 +260,9 @@ export class AutoBuyer {
       const etf = paidEtfs[0];
 
       if (etf) {
-        console.log(`Choosing to buy a single paid ETF: ${etf.product.symbol}`);
+        this.logger.info(
+          `Choosing to buy a single paid ETF: ${etf.product.symbol}`
+        );
 
         // Calculate amount
         const amount = Math.floor(investableCash / etf.product.closePrice);
@@ -276,16 +271,18 @@ export class AutoBuyer {
         const confirmation = await this.degiroClient.placeOrder(
           etf.product.id,
           amount,
-          config.dryRun
+          this.config.dryRun
         );
-        console.log(
+        this.logger.info(
           `Successfully placed market order for ${amount} x ${etf.product.symbol} (${confirmation})`
         );
       } else {
-        console.log(`No Paid ETF to buy either`);
+        this.logger.info(`No Paid ETF to buy either`);
       }
     }
 
-    console.log(`Finished DEGIRO Autobuy at ${new Date().toLocaleString()}\n`);
+    this.logger.info(
+      `Finished DEGIRO Autobuy at ${new Date().toLocaleString()}\n`
+    );
   }
 }

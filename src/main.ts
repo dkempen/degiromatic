@@ -1,9 +1,11 @@
-import { AutoBuyer } from "./auto-buyer";
-import { ConfigLoader } from "./config-loader";
+import { Buyer } from "./buyer";
+import { ConfigurationLoader } from "./config";
+import { Degiro } from "./degiro";
 import { getLogger } from "./logger";
 import { Scheduler } from "./scheduler";
 
 const logger = getLogger();
-const configLoader = new ConfigLoader(logger);
-const autoBuyer = new AutoBuyer(logger, configLoader);
-new Scheduler(logger, autoBuyer);
+const configuration = new ConfigurationLoader(logger).configuration;
+const degiro = new Degiro(logger, configuration);
+const autoBuyer = new Buyer(logger, configuration, degiro);
+new Scheduler(logger, configuration, autoBuyer);

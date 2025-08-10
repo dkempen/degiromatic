@@ -1,23 +1,23 @@
 import schedule from "node-schedule";
 import { Logger } from "winston";
-import { AutoBuyer } from "./auto-buyer";
-import { BUY_ON_LAUNCH_ENV, SCHEDULE_DEFAULT, SCHEDULE_ENV } from "./constants";
+import { Buyer } from "./buyer";
+import { Configuration } from "./config";
 
 export class Scheduler {
-  constructor(private logger: Logger, autoBuyer: AutoBuyer) {
+  constructor(private logger: Logger, private configuration: Configuration, autoBuyer: Buyer) {
     this.startScheduler(autoBuyer);
     this.buyOnLaunch(autoBuyer);
   }
 
-  private startScheduler(autoBuyer: AutoBuyer) {
-    const cron = process.env[SCHEDULE_ENV] ?? SCHEDULE_DEFAULT;
+  private startScheduler(autoBuyer: Buyer) {
+    const cron = this.configuration.schedule;
     schedule.scheduleJob(cron, () => autoBuyer.buy());
 
     this.logger.info(`Started DEGIRO Autobuy with cron schedule "${cron}"`);
   }
 
-  private buyOnLaunch(autoBuyer: AutoBuyer) {
-    if (process.env[BUY_ON_LAUNCH_ENV] === "true") {
+  private buyOnLaunch(autoBuyer: Buyer) {
+    if (this.configuration.buyOnLaunch) {
       this.logger.warn("Starting DEGIRO Autobuy on launch. Use with caution!");
       autoBuyer.buy();
     }

@@ -1,14 +1,4 @@
 {
-  "compilerOptions": {
-    "lib": [
-      "ES2023"
-    ],
-    "target": "ES2022",
-    "module": "node16",
-    "allowJs": false,
-    "outDir": "dist",
-    "strict": true,
-    "esModuleInterop": true,
-    "sourceMap": true
-  }
+  "extends": ["@tsconfig/node22/tsconfig.json"],
+  "compilerOptions": { "outDir": "dist" }
 }

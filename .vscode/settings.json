@@ -1,15 +1,10 @@
 {
-  "files.insertFinalNewline": true,
   "editor.defaultFormatter": "esbenp.prettier-vscode",
-  "[markdown]": {
-    "editor.defaultFormatter": "DavidAnson.vscode-markdownlint"
-  },
-  "[json]": {
-    "editor.defaultFormatter": "vscode.json-language-features"
-  },
+  "[jsonc]": { "editor.defaultFormatter": "esbenp.prettier-vscode" },
+  "[markdown]": { "editor.defaultFormatter": "esbenp.prettier-vscode" },
+  "editor.codeActionsOnSave": { "source.organizeImports": "explicit" },
+  "files.insertFinalNewline": true,
   "editor.formatOnSave": true,
-  "editor.tabSize": 2,
-  "editor.codeActionsOnSave": {
-    "source.organizeImports": "explicit"
-  },
+  "prettier.printWidth": 120,
+  "editor.tabSize": 2
 }

@@ -12,9 +12,8 @@
       "preLaunchTask": "npm: build",
       "internalConsoleOptions": "openOnSessionStart",
       "outputCapture": "std",
-      "outFiles": [
-        "${workspaceFolder}/dist/**/*.js"
-      ]
+      "outFiles": ["${workspaceFolder}/dist/**/*.js"],
+      "skipFiles": ["<node_internals>/**"]
     }
   ]
 }

@@ -2,7 +2,6 @@ import DeGiro from "degiro-api";
 import {
   DeGiroActions,
   DeGiroMarketOrderTypes,
-  DeGiroProducTypes as DeGiroProductTypes,
   DeGiroTimeTypes,
   PORTFOLIO_POSITIONS_TYPE_ENUM,
 } from "degiro-api/dist/enums";
@@ -76,64 +75,60 @@ export class Degiro {
   }
 
   public async getCashFunds(currency: string): Promise<number> {
-    const cash = (await this.degiro.getCashFunds()).filter((type) => type.currencyCode === currency)[0]!.value;
-    return cash;
+    return (await this.degiro.getCashFunds()).filter((type) => type.currencyCode === currency)[0]!.value;
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  public async getPortfolio(): Promise<any[]> {
-    return await this.degiro.getPortfolio({
-      type: PORTFOLIO_POSITIONS_TYPE_ENUM.ALL,
-      getProductDetails: true,
-    });
+  public async getPortfolio(): Promise<OwnedProduct[]> {
+    return (await this.degiro.getPortfolio({ type: PORTFOLIO_POSITIONS_TYPE_ENUM.OPEN, getProductDetails: true })).map(
+      (x) => x
+    );
   }
 
   public async hasOpenOrders(): Promise<boolean> {
     return (await this.degiro.getOrders({ active: true })).orders.length > 0;
   }
 
-  public async searchProduct(isin: string, exchangeId: number): Promise<SearchProductResultType | undefined> {
-    const matchingProducts = (
-      await this.degiro.searchProduct({
-        type: DeGiroProductTypes.etfs,
-        text: isin,
-      })
-    ).filter((product) => {
-      return isin.toLowerCase() === product.isin.toLowerCase() && product.exchangeId === exchangeId.toString();
+  public async searchProduct(isin: string, exchangeId: string): Promise<SearchProductResultType | undefined> {
+    const matchingProducts = (await this.degiro.searchProduct({ text: isin })).filter((product) => {
+      return isin.toLowerCase() === product.isin.toLowerCase() && product.exchangeId === exchangeId;
     });
 
     return matchingProducts.length > 0 ? matchingProducts[0] : undefined;
   }
 
-  public async getOrderInfo(productId: string): Promise<OrderInfo> {
+  public async getTransactionFee(productId: string): Promise<number> {
     // Create order to check transaction fees
     const orderType: OrderType = {
       buySell: DeGiroActions.BUY,
-      productId: productId,
       orderType: DeGiroMarketOrderTypes.LIMITED,
+      timeType: DeGiroTimeTypes.DAY,
+      productId,
       size: 1, // Doesn't matter, just checking transaction fees
       price: 0.01,
-      timeType: DeGiroTimeTypes.DAY,
     };
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const order = (await this.degiro.createOrder(orderType)) as any;
-    const isInCoreSelection = order.messages.includes("trader.orderConfirmation.freeETFCommissionNotice");
-    const transactionFee = order.transactionFee;
-    return { isInCoreSelection, transactionFee };
+
+    interface OrderDetails {
+      transactionFee: number;
+      messages: string[];
+    }
+
+    const order = (await this.degiro.createOrder(orderType)) as unknown as OrderDetails;
+    // const isInCoreSelection = order.messages.includes("trader.orderConfirmation.freeETFCommissionNotice");
+    return order.transactionFee;
   }
 
-  public async placeOrder(productId: string, amount: number, limitOrder?: number, dryRun = true): Promise<string> {
+  public async placeOrder(productId: string, quantity: number, limitOrder?: number, dryRun = true): Promise<string> {
     if (dryRun) {
       return "Dry run. Not placing an actual order.";
     }
 
-    this.logger.info(`Buying ${amount} of ${productId}`);
+    this.logger.info(`Placing order for ${quantity} of ${productId}`);
     const orderType = {
       buySell: DeGiroActions.BUY,
-      productId: productId,
       orderType: limitOrder ? DeGiroMarketOrderTypes.LIMITED : DeGiroMarketOrderTypes.MARKET,
       timeType: DeGiroTimeTypes.DAY,
-      size: amount,
+      productId,
+      size: quantity,
       price: limitOrder,
     } as OrderType;
     try {
@@ -141,7 +136,7 @@ export class Degiro {
       const confirmation = await this.degiro.executeOrder(orderType, order.confirmationId);
       return confirmation.toString();
     } catch (error) {
-      return `Error tijdens kopen: ${JSON.stringify(error)}`;
+      return `Error during ordering: ${JSON.stringify(error)}`;
     }
   }
 
@@ -156,9 +151,7 @@ export class Degiro {
       format: "json",
       userToken: `${this.accountId}`,
     });
-    const headers = {
-      Origin: "https://trader.degiro.nl/",
-    };
+    const headers = { Origin: "https://trader.degiro.nl/" };
     const url = `${host}${endpoint}?${params}`;
     const response = await fetch(url, { headers });
     const result = await response.json();
@@ -182,10 +175,10 @@ export class Degiro {
   }
 
   private saveSession() {
-    const jsession = this.degiro.getJSESSIONID();
-    if (jsession && jsession !== this.session) {
+    const session = this.degiro.getJSESSIONID();
+    if (session && session !== this.session) {
       try {
-        fs.writeFileSync(this.sessionFilePath, jsession, "utf8");
+        fs.writeFileSync(this.sessionFilePath, session, "utf8");
       } catch (e) {
         this.logger.error(`Error while writing session file: ${e}`);
       }
@@ -197,7 +190,11 @@ export class Degiro {
   }
 }
 
-export interface OrderInfo {
-  isInCoreSelection: boolean;
-  transactionFee: number;
+export interface OwnedProduct {
+  value: number;
+  productData: {
+    symbol: string;
+    isin: string;
+    exchangeId: string;
+  };
 }

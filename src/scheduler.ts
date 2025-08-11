@@ -12,7 +12,6 @@ export class Scheduler {
   private startScheduler(autoBuyer: Buyer) {
     const cron = this.configuration.schedule;
     schedule.scheduleJob(cron, () => autoBuyer.buy());
-
     this.logger.info(`Started DEGIRO Autobuy with cron schedule "${cron}"`);
   }
 

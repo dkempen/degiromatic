@@ -18,13 +18,13 @@ export class ConfigurationLoader {
     isin: z.string().regex(/^[A-Z]{2}[A-Z0-9]{9}[0-9]$/, { message: "Invalid ISIN format" }),
     ratio: z.coerce.number().min(1),
     exchange: z.coerce.number().min(1),
-    core: this.boolean().default(false),
   });
 
   private readonly configurationSchema = z.object({
     credentials: this.degiroCredentialsSchema,
     minCashInvest: z.coerce.number().min(1).default(100),
     maxCashInvest: z.coerce.number().min(1).default(2000),
+    maxFeePercentage: z.coerce.number().nonnegative().optional(),
     cashCurrency: z.string().length(3).default("EUR"),
     allowOpenOrders: this.boolean().default(false),
     useLimitOrder: this.boolean().default(true),
@@ -67,10 +67,11 @@ export class ConfigurationLoader {
       },
       minCashInvest: process.env.MIN_CASH_INVEST,
       maxCashInvest: process.env.MAX_CASH_INVEST,
+      maxFeePercentage: process.env.MAX_FEE_PERCENTAGE,
       cashCurrency: process.env.CASH_CURRENCY,
       allowOpenOrders: process.env.ALLOW_OPEN_ORDERS,
       useLimitOrder: process.env.USE_LIMIT_ORDER,
-      portfolio: portfolio,
+      portfolio,
       schedule: process.env.SCHEDULE,
       buyOnLaunch: process.env.BUY_ON_LAUNCH,
       dryRun: process.env.DRY_RUN,
@@ -100,6 +101,7 @@ export interface Configuration {
   credentials: Credentials;
   minCashInvest: number;
   maxCashInvest: number;
+  maxFeePercentage?: number;
   cashCurrency: string;
   allowOpenOrders: boolean;
   useLimitOrder: boolean;
@@ -114,7 +116,6 @@ export interface Product {
   isin: string;
   ratio: number;
   exchange: number;
-  core: boolean;
 }
 
 export interface Credentials {

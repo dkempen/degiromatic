@@ -25,33 +25,33 @@ TODO...
 
 ## Configuration
 
-The script is configured entirely via environment variables. This section describes all available configuration options and their meanings.
+The script is configured entirely via environment variables. This section describes all available configuration options and their meanings. Only required variables without a default value have to be manually defined.
 
 ### Environment variables
 
-| Name                        | Type      | Required | Default      | Description                                                                           |
-| --------------------------- | --------- | -------- | ------------ | ------------------------------------------------------------------------------------- |
-| **Credentials**             |           |          |              |                                                                                       |
-| `DEGIRO_USERNAME`           | `string`  | Yes      |              | Username of your DEGIRO account.                                                      |
-| `DEGIRO_PASSWORD`           | `string`  | Yes      |              | Password of your DEGIRO account (use .env or Docker Secrets!).                        |
-| `DEGIRO_TOTP_SEED`          | `string`  |          |              | The TOTP seed (optional) for two-factor authentication (use .env or Docker Secrets!). |
-| **Broker Settings**         |           |          |              |                                                                                       |
-| `MIN_CASH_INVEST`           | `number`  |          | `100`        | Minimum total order amount for a single execution.                                    |
-| `MAX_CASH_INVEST`           | `number`  |          | `2000`       | Maximum total order amount for a single execution.                                    |
-| `CASH_CURRENCY`             | `string`  |          | `EUR`        | Currency of cash in your DEGIRO account (3-letter code).                              |
-| `ALLOW_OPEN_ORDERS`         | `boolean` |          | `false`      | If `false`, script will not place orders if there are open orders in your account.    |
-| `USE_LIMIT_ORDER`           | `boolean` |          | `true`       | Use limit orders instead of market orders.                                            |
-| **Portfolio Products**      |           |          |              |                                                                                       |
-| `PRODUCT_<SYMBOL>_ISIN`     | `string`  | Yes      |              | ISIN identifier for the product.                                                      |
-| `PRODUCT_<SYMBOL>_RATIO`    | `number`  | Yes      |              | Desired relative ratio allocation in your portfolio.                                  |
-| `PRODUCT_<SYMBOL>_EXCHANGE` | `number`  | Yes      |              | ID of the exchange to buy the product from (E.g. EAM is 200 & NSY is 676).            |
-| `PRODUCT_<SYMBOL>_CORE`     | `boolean` |          | `false`      | If `true`, order only if product is part of the DEGIRO Core Selection.                |
-| **Run Settings**            |           |          |              |                                                                                       |
-| `SCHEDULE`                  | `string`  |          | `0 12 * * *` | [Cron schedule](https://crontab.guru/) for when to execute the script.                |
-| `BUY_ON_LAUNCH`             | `boolean` |          | `false`      | Start autobuy immediately on launch. **Use with caution!**                            |
-| `DRY_RUN`                   | `boolean` |          | `true`       | If `true`, no actual orders are placed. Only set to false if you are done testing!    |
-| `LOG_LEVEL`                 | `string`  |          | `info`       | Application log level (E.g. `error`, `warn`, `info` or `debug`).                      |
-| `TZ`                        | `string`  |          |              | Time zone identifier used by the cron schedule.                                       |
+| Name                        | Type      | Required | Default      | Description                                                                              |
+| --------------------------- | --------- | -------- | ------------ | ---------------------------------------------------------------------------------------- |
+| **Credentials**             |           |          |              |                                                                                          |
+| `DEGIRO_USERNAME`           | `string`  | ✓        |              | Username of your DEGIRO account.                                                         |
+| `DEGIRO_PASSWORD`           | `string`  | ✓        |              | Password of your DEGIRO account (use .env or Docker Secrets!).                           |
+| `DEGIRO_TOTP_SEED`          | `string`  | ✗        |              | The TOTP seed (optional) for two-factor authentication (use .env or Docker Secrets!).    |
+| **Broker Settings**         |           |          |              |                                                                                          |
+| `MIN_CASH_INVEST`           | `number`  | ✓        | `100`        | Minimum total order amount for a single execution.                                       |
+| `MAX_CASH_INVEST`           | `number`  | ✓        | `2000`       | Maximum total order amount for a single execution.                                       |
+| `MAX_FEE_PERCENTAGE`        | `number`  | ✗        |              | The maximum fee allowed in percent of order amount to prevent high fees on small orders. |
+| `CASH_CURRENCY`             | `string`  | ✓        | `EUR`        | Currency of cash in your DEGIRO account (3-letter code seen next to the cash balance).   |
+| `ALLOW_OPEN_ORDERS`         | `boolean` | ✓        | `false`      | If `false`, script will not place orders if there are open orders in your account.       |
+| `USE_LIMIT_ORDER`           | `boolean` | ✓        | `true`       | Use limit orders instead of market orders.                                               |
+| **Portfolio Products**      |           |          |              |                                                                                          |
+| `PRODUCT_<SYMBOL>_ISIN`     | `string`  | ✓        |              | ISIN identifier for the product.                                                         |
+| `PRODUCT_<SYMBOL>_RATIO`    | `number`  | ✓        |              | Desired relative ratio allocation in your portfolio.                                     |
+| `PRODUCT_<SYMBOL>_EXCHANGE` | `number`  | ✓        |              | ID of the exchange to buy the product from (E.g. EAM is 200 & NSY is 676).               |
+| **Run Settings**            |           |          |              |                                                                                          |
+| `SCHEDULE`                  | `string`  | ✓        | `0 12 * * *` | [Cron schedule](https://crontab.guru/) for when to execute the script.                   |
+| `BUY_ON_LAUNCH`             | `boolean` | ✓        | `false`      | Start autobuy immediately on launch. **Use with caution!**                               |
+| `DRY_RUN`                   | `boolean` | ✓        | `true`       | If `true`, no actual orders are placed. Only set to false if you are done testing!       |
+| `LOG_LEVEL`                 | `string`  | ✓        | `info`       | Application log level (E.g. `error`, `warn`, `info` or `debug`).                         |
+| `TZ`                        | `string`  | ✗        |              | Time zone identifier used by the cron schedule.                                          |
 
 ### Persistence
 

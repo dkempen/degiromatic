@@ -1,8 +1,8 @@
 import { SearchProductResultType } from "degiro-api/dist/types";
 import { Logger } from "winston";
-import { Configuration } from "./config";
-import { Degiro, OrderInfo } from "./degiro";
-import { delay, exitProcess, getSumOfProperty } from "./util";
+import { Configuration, Product } from "./config";
+import { Degiro, OwnedProduct } from "./degiro";
+import { delay, exitProcess } from "./util";
 
 export class Buyer {
   constructor(private logger: Logger, private configuration: Configuration, private degiro: Degiro) {}
@@ -10,13 +10,13 @@ export class Buyer {
   public async buy() {
     this.logger.info(`Started DEGIRO Autobuy at ${new Date().toLocaleString()}`);
 
-    // Process some things from config: Calculate ratios for desired portfolio
-    const totalRatio = getSumOfProperty(this.configuration.portfolio, (x) => x.ratio);
-    this.configuration.portfolio.forEach((x) => (x.ratio = x.ratio / totalRatio));
+    // Calculate ratio's for desired portfolio
+    const totalRatio = this.configuration.portfolio.reduce((sum, x) => sum + x.ratio, 0);
+    this.configuration.portfolio.forEach((product) => (product.ratio = product.ratio / totalRatio));
 
     this.logger.info(
       `Desired portfolio: ${this.configuration.portfolio
-        .map((etf) => `${etf.symbol} (${(etf.ratio * 100).toFixed(2)}%)`)
+        .map((product) => `${product.symbol} (${(product.ratio * 100).toFixed(2)}%)`)
         .join(", ")}`
     );
 
@@ -33,35 +33,19 @@ export class Buyer {
     // If cash funds is not high enough, don't buy anything
     if (cash < this.configuration.minCashInvest) {
       this.logger.info(
-        `Cash in account (${cash} ${this.configuration.cashCurrency}) is less than minimum cash funds (${this.configuration.minCashInvest} ${this.configuration.cashCurrency}).`
+        `Cash in account (${cash} ${this.configuration.cashCurrency}) ` +
+          `is less than minimum cash funds (${this.configuration.minCashInvest} ${this.configuration.cashCurrency}).`
       );
       return;
     }
 
+    // Limit investment to cash funds and maximum investment amount
     const investableCash = Math.min(this.configuration.maxCashInvest, cash);
 
     this.logger.info(
-      `Cash in account: ${cash} ${this.configuration.cashCurrency}, limiting investment to ${investableCash} ${this.configuration.cashCurrency}`
+      `Cash in account: ${cash} ${this.configuration.cashCurrency}, ` +
+        `limiting investment to ${investableCash} ${this.configuration.cashCurrency}`
     );
-
-    // Get portfolio
-    const portfolio = await this.degiro.getPortfolio();
-
-    // Filter existing portfolio ETFs from desired portfolio in config
-    const ownedEtfs = portfolio.filter(
-      (etf) =>
-        etf.positionType === "PRODUCT" &&
-        etf.productData &&
-        this.configuration.portfolio.some(
-          (desiredEtf) => desiredEtf.isin === etf.productData.isin && desiredEtf.symbol === etf.productData.symbol
-        )
-    );
-
-    // Get total value of all ETFs in portfolio
-    const totalETFValue = getSumOfProperty(ownedEtfs, (x) => x.value);
-
-    const coreEtfs: BuyInfo[] = [];
-    const paidEtfs: BuyInfo[] = [];
 
     // Check order history for open order if open orders are not allowed
     if (!this.configuration.allowOpenOrders) {
@@ -72,165 +56,218 @@ export class Buyer {
       }
     }
 
-    // Loop over wanted products, see if ratio is below wanted ratio
-    for (const etf of this.configuration.portfolio) {
-      // Find current product in owned products
-      const matchingOwnedEtfs = ownedEtfs.filter(
-        (ownedEtf) =>
-          ownedEtf.productData && ownedEtf.productData.isin === etf.isin && ownedEtf.productData.symbol === etf.symbol
-      );
+    // Get owned products
+    const ownedProducts = await this.getOwnedProducts();
 
-      // Calculate owned ratio in relation to total ETF value of portfolio
-      const ownedEtfValue = getSumOfProperty(matchingOwnedEtfs, (x) => x.value);
-      const ownedEtfValueRatio = ownedEtfValue / (totalETFValue + investableCash);
+    // Prepare order list
+    const orderList = await this.prepareOrderList(ownedProducts);
 
-      if (ownedEtfValueRatio >= etf.ratio) {
-        this.logger.info(
-          `Symbol ${etf.symbol} (${etf.isin}): ` +
-            `actual ratio ${ownedEtfValueRatio.toFixed(2)} > ` +
-            `${etf.ratio.toFixed(2)} wanted ratio, ignoring.`
-        );
-        continue;
-      }
+    // Calculate optimal order quantities
+    await this.calculateOptimalOrderList(orderList, investableCash);
 
-      this.logger.info(
-        `Symbol ${etf.symbol} (${etf.isin}): ` +
-          `actual ratio ${ownedEtfValueRatio.toFixed(2)} < ` +
-          `${etf.ratio.toFixed(2)} wanted ratio, adding to buy list.`
-      );
+    // Place orders
+    await this.placeOrders(orderList);
 
-      const ratioDifference = etf.ratio - ownedEtfValue;
+    // Log current ratios
+    this.logOwnedPortfolio(await this.getOwnedProducts());
 
-      // Search product
-      const product = await this.degiro.searchProduct(etf.isin, etf.exchange);
-      if (!product) {
+    // Finished!
+    this.logger.info(`Finished DEGIRO Autobuy at ${new Date().toLocaleString()}\n`);
+  }
+
+  private async getOwnedProducts(): Promise<OwnedProduct[]> {
+    // Get portfolio
+    const portfolio = await this.degiro.getPortfolio();
+
+    // Filter owned portfolio products from desired portfolio in configuration
+    const ownedProducts = portfolio.filter((ownedProduct) =>
+      this.configuration.portfolio.some(
+        (wantedProduct) =>
+          wantedProduct.isin === ownedProduct.productData.isin &&
+          wantedProduct.exchange.toString() === ownedProduct.productData.exchangeId
+      )
+    );
+
+    return ownedProducts;
+  }
+
+  private async prepareOrderList(ownedProducts: OwnedProduct[]): Promise<Order[]> {
+    // Get a list of wanted products with fees
+    const orders: Order[] = [];
+    for (const product of ownedProducts) {
+      const searchedProduct = await this.degiro.searchProduct(product.productData.isin, product.productData.exchangeId);
+      if (!searchedProduct) {
         this.logger.error(
-          `Did not find matching product for symbol ${etf.symbol} (${etf.isin}) on exchange ${etf.exchange}`
+          `Did not find matching for product ${product.productData.symbol} (${product.productData.isin})`
+        );
+        continue;
+      }
+      const transactionFee = await this.degiro.getTransactionFee(searchedProduct.id);
+      const price = await this.degiro.getPrice(searchedProduct.vwdId);
+
+      if (!price) {
+        this.logger.error(
+          `Could not find price for product ${product.productData.symbol} (${product.productData.isin})`
         );
         continue;
       }
 
-      const orderInfo = await this.degiro.getOrderInfo(product.id);
-      if (etf.core && !orderInfo.isInCoreSelection) {
-        this.logger.info(
-          `Symbol ${etf.symbol} (${etf.isin}) on exchange ${product.exchangeId} is in DEGIRO core selection, ` +
-            `but does not have core selection transaction fees, ignoring.`
-        );
-        continue;
-      }
-      const buyInfo = { product, orderInfo, ratioDifference } as BuyInfo;
-      if (this.configuration.useLimitOrder) {
-        buyInfo.limitOrder = (await this.degiro.getPrice(product.vwdId)) ?? undefined;
+      const order: Order = {
+        product: searchedProduct,
+        owned: product,
+        configuration: this.configuration.portfolio.find(
+          (x) => x.isin === searchedProduct.isin && x.exchange.toString() === searchedProduct.exchangeId
+        )!,
+        price: price + 0.02, // Add 2 cents to allow for price fluctuations
+        fee: transactionFee,
+        quantity: 0,
+        ratio: 0,
+        ratioError: 0,
+        feePercentage: 0,
+      };
 
-        if (!buyInfo.limitOrder) {
-          this.logger.error(
-            `Failed to get price data of product ${etf.symbol} (${etf.isin}) with id "${product.vwdId}`
-          );
-          continue;
-        }
-
-        // Add 2 cents to limit order amount to compensate for price fluctuations
-        buyInfo.limitOrder += 0.02;
-      }
-
-      if (etf.core) {
-        coreEtfs.push(buyInfo);
-      } else {
-        paidEtfs.push(buyInfo);
-      }
+      orders.push(order);
     }
 
+    // Calculate current ratios and log it
+    this.logOwnedPortfolio(orders.map((x) => x.owned));
+
+    return orders;
+  }
+
+  private logOwnedPortfolio(ownedProducts: OwnedProduct[]) {
+    const ownedTotalValue = ownedProducts.reduce((sum, x) => sum + x.value, 0);
     this.logger.info(
-      `Core ETFs eligible for buying: ${coreEtfs
-        .map((x) => `${x.product.symbol} at ${x.limitOrder} ${x.product.currency}`)
+      `Owned portfolio: ${ownedProducts
+        .map((product) => `${product.productData.symbol} (${((product.value / ownedTotalValue) * 100).toFixed(2)}%)`)
         .join(", ")}`
     );
-    this.logger.info(`Paid ETFs eligible for buying: ${paidEtfs.map((x) => x.product.symbol).join(", ")}`);
+  }
 
-    // Either select all eligible core ETFs for buying, or the first paid one
-    if (coreEtfs.length > 0) {
-      // Place orders for all core ETFs
+  private async calculateOptimalOrderList(orders: Order[], investableCash: number): Promise<Order[]> {
+    // Get current owned value of all owned products
+    const ownedTotalValue = orders.reduce((sum, x) => sum + x.owned.value, 0);
+    const totalValue = ownedTotalValue + investableCash;
 
-      this.logger.info("Choosing to buy core ETFs (DEGIRO Core selection), dividing available cash by wanted ratio");
+    // Loop and products to order list approaching by not exceeding the ratio and update the ratio
+    for (const order of orders) {
+      order.quantity = this.calculateMaxQuantity(order.owned.value, totalValue, order.configuration.ratio, order.price);
+      this.updateRatio(order, totalValue);
+    }
 
-      // Determine amounts
-      let ready = false;
+    // Try incrementing the quantity of the order with the greatest ratio error
+    while (true) {
+      orders.sort((a, b) => b.ratioError - a.ratioError);
+      const order = orders[0];
+      order.quantity++;
+      this.updateRatio(order, totalValue);
+      const leftoverCash = this.calculateLeftoverCash(orders, investableCash);
 
-      while (!ready) {
-        const coreEtfsTotalNeededRatio = getSumOfProperty(coreEtfs, (x) => x.ratioDifference);
-
-        ready = true;
-
-        for (const etf of coreEtfs) {
-          const ratio = etf.ratioDifference / coreEtfsTotalNeededRatio;
-          const amount = Math.floor(
-            (ratio * investableCash - etf.orderInfo.transactionFee) /
-              (etf.limitOrder ? etf.limitOrder : etf.product.closePrice)
-          );
-
-          if (amount > 0) {
-            etf.amountToBuy = amount;
-          } else {
-            ready = false;
-            this.logger.info(`Cancel order for ${amount} x ${etf.product.symbol}, amount is 0`);
-            coreEtfs.splice(coreEtfs.indexOf(etf), 1);
-            break;
-          }
-        }
-      }
-
-      for (const etf of coreEtfs) {
-        // Calculate amount
-        if (!etf.amountToBuy || etf.amountToBuy < 1) {
-          continue;
-        }
-
-        await delay(1000);
-
-        const confirmation = await this.degiro.placeOrder(
-          etf.product.id,
-          etf.amountToBuy,
-          etf.limitOrder,
-          this.configuration.dryRun
-        );
-        this.logger.info(
-          `Successfully placed market order ` +
-            `for ${etf.amountToBuy} x ${etf.product.symbol} ` +
-            `for ${(etf.product.closePrice * etf.amountToBuy).toFixed(2)} ` +
-            `${etf.product.currency} (${confirmation})`
-        );
-      }
-    } else {
-      // Place order for paid ETF if exists
-      const etf = paidEtfs[0];
-
-      if (etf) {
-        this.logger.info(`Choosing to buy a single paid ETF: ${etf.product.symbol}`);
-
-        // Calculate amount
-        const amount = Math.floor(investableCash / etf.product.closePrice);
-
-        await delay(2000);
-        const confirmation = await this.degiro.placeOrder(
-          etf.product.id,
-          amount,
-          etf.limitOrder,
-          this.configuration.dryRun
-        );
-        this.logger.info(`Successfully placed market order for ${amount} x ${etf.product.symbol} (${confirmation})`);
-      } else {
-        this.logger.info(`No Paid ETF to buy either`);
+      if (leftoverCash < 0) {
+        order.quantity--;
+        this.updateRatio(order, totalValue);
+        break;
       }
     }
 
-    this.logger.info(`Finished DEGIRO Autobuy at ${new Date().toLocaleString()}\n`);
+    // Try adding 1 to each other order until all cash is spent
+    let added = true;
+    while (added) {
+      added = false;
+      orders.sort((a, b) => b.ratioError - a.ratioError);
+      for (const order of orders) {
+        order.quantity++;
+        this.updateRatio(order, totalValue);
+        const leftoverCash = this.calculateLeftoverCash(orders, investableCash);
+
+        if (leftoverCash < 0) {
+          order.quantity--;
+          this.updateRatio(order, totalValue);
+        } else {
+          added = true;
+        }
+      }
+    }
+
+    // If maximum fee is not configured, the orders are ready to be placed.
+    if (!this.configuration.maxFeePercentage) {
+      return orders;
+    }
+
+    // If there are orders above the maximum fee percentage, blacklist the order with the highest fee percentage and start from scratch.
+    orders.sort((a, b) => b.feePercentage - a.feePercentage);
+    const order = orders[0];
+    if (order.feePercentage > this.configuration.maxFeePercentage) {
+      this.logger.info(
+        `Product ${order.product.symbol} (${order.product.isin}) removed from order list ` +
+          `because the fee of ${order.fee.toFixed(2)} ${order.product.currency} ` +
+          `(${order.feePercentage.toFixed(2)}% of order) is above the maximum ` +
+          `of ${this.configuration.maxFeePercentage.toFixed(2)}%`
+      );
+      orders.splice(0, 1);
+
+      // If there are no orders left, return.
+      if (orders.length === 0) {
+        return orders;
+      }
+
+      // Recalculate with filtered orders
+      return this.calculateOptimalOrderList(orders, investableCash);
+    }
+
+    // If there are no orders above the maximum fee, the orders are ready to be placed.
+    return orders;
+  }
+
+  private calculateMaxQuantity(ownedValue: number, totalValue: number, wantedRatio: number, price: number): number {
+    const wantedValue = wantedRatio * totalValue;
+    const missingValue = wantedValue - ownedValue;
+    // Already at or above target
+    if (missingValue <= 0) {
+      return 0;
+    }
+    return Math.floor(missingValue / price);
+  }
+
+  private updateRatio(order: Order, totalValue: number) {
+    order.ratio = (order.owned.value + order.quantity * order.price) / totalValue;
+    order.ratioError = order.configuration.ratio = order.ratio;
+    order.feePercentage = (order.fee / (order.quantity * order.price)) * 100;
+  }
+
+  private calculateLeftoverCash(orders: Order[], investableCash: number): number {
+    const totalCost = orders.reduce((sum, order) => sum + order.price * order.quantity + order.fee, 0);
+    return investableCash - totalCost;
+  }
+
+  private async placeOrders(orders: Order[]) {
+    for (const order of orders) {
+      const confirmation = await this.degiro.placeOrder(
+        order.product.id,
+        order.quantity,
+        this.configuration.useLimitOrder ? order.price : undefined,
+        this.configuration.dryRun
+      );
+      this.logger.info(
+        `${this.configuration.dryRun ? "Placed simulated" : "Successfully placed"} ` +
+          `${this.configuration.useLimitOrder ? "limit" : "market"} order ` +
+          `for ${order.quantity} x ${order.product.symbol} (${order.product.isin}) ` +
+          `at ${order.product.closePrice.toFixed(2)} ${order.product.currency} for a total of ` +
+          `${(order.product.closePrice * order.quantity).toFixed(2)} ${order.product.currency} (${confirmation})`
+      );
+      await delay(1000);
+    }
   }
 }
 
-interface BuyInfo {
+interface Order {
   product: SearchProductResultType;
-  orderInfo: OrderInfo;
-  amountToBuy: number | undefined;
-  limitOrder: number | undefined;
-  ratioDifference: number;
+  owned: OwnedProduct;
+  configuration: Product;
+  fee: number;
+  price: number;
+  quantity: number;
+  ratio: number;
+  ratioError: number;
+  feePercentage: number;
 }

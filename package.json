@@ -18,7 +18,7 @@
     "zod": "^4.0.17"
   },
   "devDependencies": {
-    "@tsconfig/node22": "^22.0.2",
+    "@tsconfig/node24": "^24.0.1",
     "@types/node-schedule": "^2.1.8",
     "eslint": "^9.33.0",
     "eslint-plugin-only-warn": "^1.1.0",

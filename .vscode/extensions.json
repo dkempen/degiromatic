@@ -1,8 +1,9 @@
 {
   "recommendations": [
-    "esbenp.prettier-vscode",
-    "streetsidesoftware.code-spell-checker",
-    "dbaeumer.vscode-eslint",
-    "yzhang.markdown-all-in-one"
+    "esbenp.prettier-vscode", // Formatting
+    "dbaeumer.vscode-eslint", // Linting
+    "streetsidesoftware.code-spell-checker", // Spell checking
+    "yzhang.markdown-all-in-one", // Markdown editing
+    "vitest.explorer" // Testing
   ]
 }

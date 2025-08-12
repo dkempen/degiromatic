@@ -7,5 +7,5 @@ import { Scheduler } from "./scheduler";
 const logger = getLogger();
 const configuration = new ConfigurationLoader(logger).configuration;
 const degiro = new Degiro(logger, configuration);
-const autoBuyer = new Buyer(logger, configuration, degiro);
-new Scheduler(logger, configuration, autoBuyer);
+const buyer = new Buyer(logger, configuration, degiro);
+new Scheduler(logger, configuration, buyer);

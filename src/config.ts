@@ -1,11 +1,11 @@
-import { Logger } from "winston";
-import { z } from "zod";
-import { exitProcess } from "./util";
+import { Logger } from 'winston';
+import { z } from 'zod';
+import { exitProcess } from './util';
 
 export class ConfigurationLoader {
   readonly configuration!: Configuration;
 
-  private readonly boolean = () => z.preprocess((v) => v === "true" || v === true, z.boolean());
+  private readonly boolean = () => z.preprocess((v) => v === 'true' || v === true, z.boolean());
 
   private readonly degiroCredentialsSchema = z.object({
     username: z.string().min(1),
@@ -15,7 +15,7 @@ export class ConfigurationLoader {
 
   private readonly productSchema = z.object({
     symbol: z.string().min(1),
-    isin: z.string().regex(/^[A-Z]{2}[A-Z0-9]{9}[0-9]$/, { message: "Invalid ISIN format" }),
+    isin: z.string().regex(/^[A-Z]{2}[A-Z0-9]{9}[0-9]$/, { message: 'Invalid ISIN format' }),
     ratio: z.coerce.number().min(1),
     exchange: z.coerce.number().min(1),
   });
@@ -25,11 +25,11 @@ export class ConfigurationLoader {
     minCashInvest: z.coerce.number().min(1).default(100),
     maxCashInvest: z.coerce.number().min(1).default(2000),
     maxFeePercentage: z.coerce.number().nonnegative().optional(),
-    cashCurrency: z.string().length(3).default("EUR"),
+    cashCurrency: z.string().length(3).default('EUR'),
     allowOpenOrders: this.boolean().default(false),
     useLimitOrder: this.boolean().default(true),
     portfolio: z.array(this.productSchema).min(1),
-    schedule: z.string().default("0 12 * * *"),
+    schedule: z.string().default('0 12 * * *'),
     buyOnLaunch: this.boolean().default(false),
     dryRun: this.boolean().default(true),
   });
@@ -47,7 +47,7 @@ export class ConfigurationLoader {
     const productsMap = new Map<string, Record<string, unknown>>();
 
     for (const [k, v] of Object.entries(process.env)) {
-      if (!k.startsWith("PRODUCT_") || !v) continue;
+      if (!k.startsWith('PRODUCT_') || !v) continue;
       const m = k.match(/^PRODUCT_([^_]+)_(.+)$/i);
       if (!m) continue;
       const [, symbol, field] = m;
@@ -81,7 +81,7 @@ export class ConfigurationLoader {
     const configuration = this.configurationSchema.parse(rawConfiguration) as Configuration;
 
     // Log configuration
-    const secret = "*****";
+    const secret = '*****';
     const logConfiguration = {
       ...configuration,
       credentials: {
@@ -90,7 +90,7 @@ export class ConfigurationLoader {
         ...(configuration.credentials.totpSeed && { totpSeed: secret }),
       },
     };
-    this.logger.debug("Loaded configuration: " + JSON.stringify(logConfiguration, null, 2));
+    this.logger.debug('Loaded configuration: ' + JSON.stringify(logConfiguration, null, 2));
 
     // Return validated configuration for use
     return configuration;

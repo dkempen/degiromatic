@@ -1,8 +1,8 @@
-import { SearchProductResultType } from "degiro-api/dist/types";
-import { Logger } from "winston";
-import { Configuration, Product } from "./config";
-import { Degiro, OwnedProduct } from "./degiro";
-import { delay, exitProcess } from "./util";
+import { SearchProductResultType } from 'degiro-api/dist/types';
+import { Logger } from 'winston';
+import { Configuration, Product } from './config';
+import { Degiro, OwnedProduct } from './degiro';
+import { delay, exitProcess } from './util';
 
 export class Buyer {
   constructor(private logger: Logger, private configuration: Configuration, private degiro: Degiro) {}
@@ -17,7 +17,7 @@ export class Buyer {
     this.logger.info(
       `Desired portfolio: ${this.configuration.portfolio
         .map((product) => `${product.symbol} (${(product.ratio * 100).toFixed(2)}%)`)
-        .join(", ")}`
+        .join(', ')}`
     );
 
     // Login
@@ -140,7 +140,7 @@ export class Buyer {
     this.logger.info(
       `Owned portfolio: ${ownedProducts
         .map((product) => `${product.productData.symbol} (${((product.value / ownedTotalValue) * 100).toFixed(2)}%)`)
-        .join(", ")}`
+        .join(', ')}`
     );
   }
 
@@ -249,8 +249,8 @@ export class Buyer {
         this.configuration.dryRun
       );
       this.logger.info(
-        `${this.configuration.dryRun ? "Placed simulated" : "Successfully placed"} ` +
-          `${this.configuration.useLimitOrder ? "limit" : "market"} order ` +
+        `${this.configuration.dryRun ? 'Placed simulated' : 'Successfully placed'} ` +
+          `${this.configuration.useLimitOrder ? 'limit' : 'market'} order ` +
           `for ${order.quantity} x ${order.product.symbol} (${order.product.isin}) ` +
           `at ${order.product.closePrice.toFixed(2)} ${order.product.currency} for a total of ` +
           `${(order.product.closePrice * order.quantity).toFixed(2)} ${order.product.currency} (${confirmation})`

@@ -1,6 +1,6 @@
-import dotenv from "dotenv";
-import { createLogger, format, transports } from "winston";
-import { CONFIG_DIRECTORY, LOG_FILE } from "./constants";
+import dotenv from 'dotenv';
+import { createLogger, format, transports } from 'winston';
+import { CONFIG_DIRECTORY, LOG_FILE } from './constants';
 
 export function getLogger() {
   const logFormat = format.combine(
@@ -8,7 +8,7 @@ export function getLogger() {
       info.level = info.level.toUpperCase();
       return info;
     })(),
-    format.timestamp({ format: "YYYY-MM-DD HH:mm:ss" }),
+    format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
     format.printf(({ timestamp, level, message }) => `${timestamp} [${level}] ${message}`)
   );
 

@@ -1,7 +1,7 @@
-import schedule from "node-schedule";
-import { Logger } from "winston";
-import { Buyer } from "./buyer";
-import { Configuration } from "./config";
+import schedule from 'node-schedule';
+import { Logger } from 'winston';
+import { Buyer } from './buyer';
+import { Configuration } from './config';
 
 export class Scheduler {
   constructor(private logger: Logger, private configuration: Configuration, autoBuyer: Buyer) {
@@ -17,7 +17,7 @@ export class Scheduler {
 
   private buyOnLaunch(autoBuyer: Buyer) {
     if (this.configuration.buyOnLaunch) {
-      this.logger.warn("Starting DEGIRO Autobuy on launch. Use with caution!");
+      this.logger.warn('Starting DEGIRO Autobuy on launch. Use with caution!');
       autoBuyer.buy();
     }
   }

@@ -1,8 +1,8 @@
-import { Buyer } from "./buyer";
-import { ConfigurationLoader } from "./config";
-import { Degiro } from "./degiro";
-import { getLogger } from "./logger";
-import { Scheduler } from "./scheduler";
+import { Buyer } from './buyer';
+import { ConfigurationLoader } from './config';
+import { Degiro } from './degiro';
+import { getLogger } from './logger';
+import { Scheduler } from './scheduler';
 
 const logger = getLogger();
 const configuration = new ConfigurationLoader(logger).configuration;

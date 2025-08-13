@@ -1,8 +1,8 @@
 {
-  "name": "degiro-autobuy",
+  "name": "degiromatic",
   "version": "0.1.0",
-  "description": "",
-  "main": "main.js",
+  "description": "Passively invest in ETFs and stocks with automated portfolio balancing via the DEGIRO broker.",
+  "main": "dist/main.js",
   "scripts": {
     "start": "node ./dist/main.js",
     "build": "tsc",

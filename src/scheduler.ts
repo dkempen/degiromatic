@@ -4,21 +4,21 @@ import { Buyer } from './buyer';
 import { Configuration } from './config';
 
 export class Scheduler {
-  constructor(private logger: Logger, private configuration: Configuration, autoBuyer: Buyer) {
-    this.startScheduler(autoBuyer);
-    this.buyOnLaunch(autoBuyer);
+  constructor(private logger: Logger, private configuration: Configuration, buyer: Buyer) {
+    this.buyOnLaunch(buyer);
+    this.startScheduler(buyer);
   }
 
-  private startScheduler(autoBuyer: Buyer) {
+  private startScheduler(buyer: Buyer) {
     const cron = this.configuration.schedule;
-    schedule.scheduleJob(cron, () => autoBuyer.buy());
+    schedule.scheduleJob(cron, () => buyer.buy());
     this.logger.info(`Started DEGIRO Autobuy with cron schedule "${cron}"`);
   }
 
-  private buyOnLaunch(autoBuyer: Buyer) {
+  private buyOnLaunch(buyer: Buyer) {
     if (this.configuration.buyOnLaunch) {
       this.logger.warn('Starting DEGIRO Autobuy on launch. Use with caution!');
-      autoBuyer.buy();
+      buyer.buy();
     }
   }
 }

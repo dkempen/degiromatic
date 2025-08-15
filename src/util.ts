@@ -1,11 +1,8 @@
-import { Logger } from 'winston';
+import { Logger } from 'pino';
 
-export async function delay(ms: number) {
-  new Promise((resolve) => setTimeout(resolve, ms));
-}
+export const delay = async (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
-export function exitProcess(logger: Logger, error: unknown): number {
-  const message = error instanceof Error ? error.message : 'Unknown Error';
-  logger.error(message);
+export const exit = (logger: Logger, error: unknown) => {
+  logger.error(error instanceof Error ? error.message : 'Unknown Error');
   process.exit(1);
-}
+};

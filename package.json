@@ -1,20 +1,22 @@
 {
   "name": "degiromatic",
   "version": "0.1.0",
-  "description": "Passively invest in ETFs and stocks with automated portfolio balancing via the DEGIRO broker.",
-  "main": "dist/main.js",
+  "description": "Passively invest in ETFs or stocks with automated portfolio balancing via the DEGIRO broker.",
+  "main": "dist/src/main.js",
   "scripts": {
-    "start": "node ./dist/main.js",
+    "start": "node ./dist/src/main.js",
     "build": "tsc",
-    "dev": "tsc -w",
+    "dev": "tsc -w --sourceMap",
+    "docker": "docker compose -f compose.dev.yaml up --build",
     "lint": "eslint --max-warnings 0"
   },
   "dependencies": {
     "degiro-api": "git://github.com/CasperVerswijvelt/degiro-api.git#60aaf6678a9aaca1a20d990555943b3d31d0721f",
     "dotenv": "^17.2.1",
     "node-schedule": "^2.1.1",
-    "otpauth": "^9.4.0",
-    "winston": "^3.17.0",
+    "otpauth": "^9.4.1",
+    "pino": "^9.9.0",
+    "pino-pretty": "git://github.com/pinojs/pino-pretty.git#99b1566c9961a25e586f7e9ae57fdc8438203d6e",
     "zod": "^4.0.17"
   },
   "devDependencies": {

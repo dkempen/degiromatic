@@ -1,0 +1,9 @@
+services:
+  degiromatic:
+    build:
+      context: .
+    container_name: degiromatic
+    restart: no
+    env_file: .env
+    volumes:
+      - ./data:/data

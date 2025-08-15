@@ -1,8 +1,8 @@
 import { SearchProductResultType } from 'degiro-api/dist/types';
-import { Logger } from 'winston';
+import { Logger } from 'pino';
 import { Configuration, Product } from './config';
 import { Degiro, OwnedProduct } from './degiro';
-import { delay, exitProcess } from './util';
+import { delay, exit } from './util';
 
 export class Buyer {
   constructor(private logger: Logger, private configuration: Configuration, private degiro: Degiro) {}
@@ -24,7 +24,7 @@ export class Buyer {
     try {
       await this.degiro.login();
     } catch (error) {
-      exitProcess(this.logger, error);
+      exit(this.logger, error);
     }
 
     // Get cash funds

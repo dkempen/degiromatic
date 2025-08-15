@@ -8,20 +8,18 @@ import {
 import { DeGiroSettupType as DeGiroSetupType, OrderType, SearchProductResultType } from 'degiro-api/dist/types';
 import fs from 'fs';
 import { TOTP } from 'otpauth';
-import { Logger } from 'winston';
-import { Configuration, Credentials } from './config';
-import { CONFIG_DIRECTORY, SESSION_FILE } from './constants';
+import path from 'path';
+import { Logger } from 'pino';
+import { Configuration } from './config';
+import { DATA_DIRECTORY, SESSION_FILE } from './constants';
 
 export class Degiro {
   private degiro!: DeGiro;
   private session: string | undefined;
   private accountId: number | undefined;
-  private credentials: Credentials;
-  private readonly sessionFilePath = CONFIG_DIRECTORY + SESSION_FILE;
+  private readonly sessionFilePath = path.join(DATA_DIRECTORY, SESSION_FILE);
 
-  constructor(private logger: Logger, configuration: Configuration) {
-    this.credentials = configuration.credentials;
-  }
+  constructor(private logger: Logger, private configuration: Configuration) {}
 
   public async login() {
     if (this.degiro?.isLogin()) {
@@ -31,8 +29,8 @@ export class Degiro {
     this.getSession();
 
     this.degiro = new DeGiro({
-      username: this.credentials.username,
-      pwd: this.credentials.password,
+      username: this.configuration.degiroUsername,
+      pwd: this.configuration.degiroPassword,
       oneTimePassword: this.getOTP(),
       jsessionId: this.session,
     } as DeGiroSetupType);
@@ -46,8 +44,8 @@ export class Degiro {
     } catch (e) {
       // Session ID is invalid or expired, login with username and password
       this.degiro = new DeGiro({
-        username: this.credentials.username,
-        pwd: this.credentials.password,
+        username: this.configuration.degiroUsername,
+        pwd: this.configuration.degiroPassword,
         oneTimePassword: this.getOTP(),
       } as DeGiroSetupType);
       try {
@@ -186,7 +184,9 @@ export class Degiro {
   }
 
   private getOTP(): string | undefined {
-    return this.credentials.totpSeed ? new TOTP({ secret: this.credentials.totpSeed }).generate() : undefined;
+    return this.configuration.degiroTotpSeed
+      ? new TOTP({ secret: this.configuration.degiroTotpSeed }).generate()
+      : undefined;
   }
 }
 

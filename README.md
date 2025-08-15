@@ -1,11 +1,11 @@
 # DEGIROmatic
 
-Passively invest in ETFs and stocks with automated portfolio balancing via the DEGIRO broker.
+Passively invest in ETFs or stocks with automated portfolio balancing via the DEGIRO broker.
 
 ## Features
 
-- **Passive** - Set and forget, so you don't forget to invest your balance. Ideal with scheduled payments.
-- **Portfolio** - Define your ETF and/or stock portfolio with a target allocation ratio.
+- **Passive** - Set and forget, so you don't have to remember to invest your balance. Ideal with scheduled payments.
+- **Portfolio** - Define your ETFs or stocks portfolio with a target allocation ratio.
 - **Rebalancing** - Finds the optimal way to rebalance your portfolio with new orders to match your target allocation.
 - **Limits** - Set limits for maximum and minimum orders amounts, and maximum fees.
 - **Scheduling** - Run monthly, daily, or anything in between on a custom schedule.
@@ -25,7 +25,27 @@ Passively invest in ETFs and stocks with automated portfolio balancing via the D
 
 ## Installation
 
-TODO...
+Docker Compose:
+
+```yaml
+services:
+  degiromatic:
+    image: ghcr.io/dkempen/degiromatic
+    container_name: degiromatic
+    restart: unless-stopped
+    environment:
+      # For all configuration environment variables, see the documentation
+      TZ: Europe/Amsterdam
+      DEGIRO_USERNAME: username
+      DEGIRO_PASSWORD: password # Use .env or Docker Secrets!
+      DEGIRO_TOTP_SEED: totp_seed # Use .env or Docker Secrets!
+      PRODUCT_VWRL_ISIN: IE00B3RBWM25 # Example product, replace with your configuration
+      PRODUCT_VWRL_RATIO: 100
+      PRODUCT_VWRL_EXCHANGE: 200
+      DRY_RUN: true # Set to false only when done testing
+    volumes:
+      - ./data:/data
+```
 
 ## Configuration
 
@@ -55,7 +75,7 @@ The tool is configured entirely via environment variables. This section describe
 | `BUY_ON_LAUNCH`             | `boolean` | ✓        | `false`      | Start autobuy immediately on launch. **Use with caution!**                               |
 | `DRY_RUN`                   | `boolean` | ✓        | `true`       | If `true`, no actual orders are placed. Only set to false if you are done testing!       |
 | `LOG_LEVEL`                 | `string`  | ✓        | `info`       | Application log level (E.g. `error`, `warn`, `info` or `debug`).                         |
-| `TZ`                        | `string`  | ✗        |              | Time zone identifier used by the cron schedule.                                          |
+| `TZ`                        | `string`  | ✗        | `UTC`        | Time zone identifier used by the logs and cron schedule. For example `Europe/Amsterdam`. |
 
 ### Persistence
 

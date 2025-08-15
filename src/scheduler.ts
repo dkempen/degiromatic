@@ -1,5 +1,5 @@
 import schedule from 'node-schedule';
-import { Logger } from 'winston';
+import { Logger } from 'pino';
 import { Buyer } from './buyer';
 import { Configuration } from './config';
 

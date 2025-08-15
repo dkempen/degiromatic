@@ -1,22 +1,20 @@
-import dotenv from 'dotenv';
-import { createLogger, format, transports } from 'winston';
-import { CONFIG_DIRECTORY, LOG_FILE } from './constants';
+import path from 'path';
+import pino from 'pino';
+import pretty from 'pino-pretty';
+import { DATA_DIRECTORY, LOG_FILE } from './constants';
 
-export function getLogger() {
-  const logFormat = format.combine(
-    format((info) => {
-      info.level = info.level.toUpperCase();
-      return info;
-    })(),
-    format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
-    format.printf(({ timestamp, level, message }) => `${timestamp} [${level}] ${message}`)
-  );
+const createStream = (destination: NodeJS.WritableStream | string, colorize = false) =>
+  pretty({
+    destination,
+    colorize,
+    colorizeMessage: colorize,
+    translateTime: 'SYS:yyyy-mm-dd HH:MM:ss',
+    ignore: 'pid,hostname',
+    sync: typeof destination === 'string',
+  });
 
-  const transportList = [
-    new transports.Console({ format: format.combine(logFormat, format.colorize({ all: true })) }),
-    new transports.File({ filename: CONFIG_DIRECTORY + LOG_FILE, format: logFormat }),
-  ];
+const level = process.env.LOG_LEVEL || 'info';
+const consoleStream = createStream(process.stdout, true);
+const fileStream = createStream(path.join(DATA_DIRECTORY, LOG_FILE));
 
-  dotenv.config({ quiet: true });
-  return createLogger({ level: process.env.LOG_LEVEL, transports: transportList });
-}
+export const getLogger = () => pino({ level }, pino.multistream([{ stream: consoleStream }, { stream: fileStream }]));

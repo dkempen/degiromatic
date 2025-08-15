@@ -1,0 +1,17 @@
+services:
+  degiromatic:
+    image: ghcr.io/dkempen/degiromatic
+    container_name: degiromatic
+    restart: unless-stopped
+    environment:
+      # For all configuration environment variables, see the documentation
+      TZ: Europe/Amsterdam
+      DEGIRO_USERNAME: username
+      DEGIRO_PASSWORD: password # Use .env or Docker Secrets!
+      DEGIRO_TOTP_SEED: totp_seed # Use .env or Docker Secrets!
+      PRODUCT_VWRL_ISIN: IE00B3RBWM25 # Example product, replace with your configuration
+      PRODUCT_VWRL_RATIO: 100
+      PRODUCT_VWRL_EXCHANGE: 200
+      DRY_RUN: true # Set to false only when done testing
+    volumes:
+      - ./data:/data

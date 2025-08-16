@@ -14,4 +14,4 @@ COPY package*.json .
 RUN npm ci
 COPY --from=build /app/dist .
 
-CMD ["node", "main.js"]
+CMD ["node", "src/main.js"]

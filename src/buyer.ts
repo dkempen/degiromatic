@@ -2,17 +2,18 @@ import { SearchProductResultType } from 'degiro-api/dist/types';
 import { Logger } from 'pino';
 import { Configuration, Product } from './config';
 import { Degiro, OwnedProduct } from './degiro';
-import { delay, exit } from './util';
+import { delay, logError } from './util';
 
 export class Buyer {
   constructor(private logger: Logger, private configuration: Configuration, private degiro: Degiro) {}
 
-  public async buy() {
-    this.logger.info(`Started DEGIRO Autobuy at ${new Date().toLocaleString()}`);
+  public async buy(): Promise<boolean> {
+    this.logger.info('Started DEGIROmatic');
 
     // Calculate ratio's for desired portfolio
     const totalRatio = this.configuration.portfolio.reduce((sum, x) => sum + x.ratio, 0);
     this.configuration.portfolio.forEach((product) => (product.ratio = product.ratio / totalRatio));
+    this.configuration.portfolio.sort((a, b) => b.ratio - a.ratio);
 
     this.logger.info(
       `Desired portfolio: ${this.configuration.portfolio
@@ -24,7 +25,8 @@ export class Buyer {
     try {
       await this.degiro.login();
     } catch (error) {
-      exit(this.logger, error);
+      logError(this.logger, error);
+      return false;
     }
 
     // Get cash funds
@@ -36,7 +38,7 @@ export class Buyer {
         `Cash in account (${cash} ${this.configuration.cashCurrency}) ` +
           `is less than minimum cash funds (${this.configuration.minCashInvest} ${this.configuration.cashCurrency}).`
       );
-      return;
+      return true;
     }
 
     // Limit investment to cash funds and maximum investment amount
@@ -52,7 +54,7 @@ export class Buyer {
       const hasOpenOrders = await this.degiro.hasOpenOrders();
       if (hasOpenOrders) {
         this.logger.info(`There are currently open orders, doing nothing.`);
-        return;
+        return true;
       }
     }
 
@@ -60,7 +62,13 @@ export class Buyer {
     const ownedProducts = await this.getOwnedProducts();
 
     // Prepare order list
-    const orderList = await this.prepareOrderList(ownedProducts);
+    let orderList: Order[] = [];
+    try {
+      orderList = await this.prepareOrderList(ownedProducts);
+    } catch (error) {
+      logError(this.logger, error);
+      return false;
+    }
 
     // Calculate optimal order quantities
     await this.calculateOptimalOrderList(orderList, investableCash);
@@ -69,10 +77,10 @@ export class Buyer {
     await this.placeOrders(orderList);
 
     // Log current ratios
-    this.logOwnedPortfolio(await this.getOwnedProducts());
+    await this.logPortfolioWithOrders(ownedProducts, orderList);
 
     // Finished!
-    this.logger.info(`Finished DEGIRO Autobuy at ${new Date().toLocaleString()}\n`);
+    return true;
   }
 
   private async getOwnedProducts(): Promise<OwnedProduct[]> {
@@ -94,30 +102,32 @@ export class Buyer {
   private async prepareOrderList(ownedProducts: OwnedProduct[]): Promise<Order[]> {
     // Get a list of wanted products with fees
     const orders: Order[] = [];
-    for (const product of ownedProducts) {
-      const searchedProduct = await this.degiro.searchProduct(product.productData.isin, product.productData.exchangeId);
-      if (!searchedProduct) {
-        this.logger.error(
-          `Did not find matching for product ${product.productData.symbol} (${product.productData.isin})`
-        );
-        continue;
+    for (const product of this.configuration.portfolio) {
+      const ownedProduct = ownedProducts.find(
+        (ownedProduct) =>
+          ownedProduct.productData.isin === product.isin &&
+          ownedProduct.productData.exchangeId === product.exchange.toString()
+      );
+      if (!ownedProduct) {
+        throw new Error(`Could not find owned product for portfolio product ${product.symbol} (${product.isin})`);
       }
+
+      const searchedProduct = await this.degiro.searchProduct(product.isin, product.exchange);
+      if (!searchedProduct) {
+        throw new Error(`Did not find matching search for product ${product.symbol} (${product.isin})`);
+      }
+
       const transactionFee = await this.degiro.getTransactionFee(searchedProduct.id);
       const price = await this.degiro.getPrice(searchedProduct.vwdId);
 
       if (!price) {
-        this.logger.error(
-          `Could not find price for product ${product.productData.symbol} (${product.productData.isin})`
-        );
-        continue;
+        throw new Error(`Could not find price for product ${product.symbol} (${product.isin})`);
       }
 
       const order: Order = {
         product: searchedProduct,
-        owned: product,
-        configuration: this.configuration.portfolio.find(
-          (x) => x.isin === searchedProduct.isin && x.exchange.toString() === searchedProduct.exchangeId
-        )!,
+        owned: ownedProduct,
+        configuration: product,
         price: price + 0.02, // Add 2 cents to allow for price fluctuations
         fee: transactionFee,
         quantity: 0,
@@ -135,10 +145,10 @@ export class Buyer {
     return orders;
   }
 
-  private logOwnedPortfolio(ownedProducts: OwnedProduct[]) {
+  private logOwnedPortfolio(ownedProducts: OwnedProduct[], afterOrders: boolean = false) {
     const ownedTotalValue = ownedProducts.reduce((sum, x) => sum + x.value, 0);
     this.logger.info(
-      `Owned portfolio: ${ownedProducts
+      `Owned portfolio ${afterOrders ? 'after orders' : 'before orders'}: ${ownedProducts
         .map((product) => `${product.productData.symbol} (${((product.value / ownedTotalValue) * 100).toFixed(2)}%)`)
         .join(', ')}`
     );
@@ -251,12 +261,26 @@ export class Buyer {
       this.logger.info(
         `${this.configuration.dryRun ? 'Placed simulated' : 'Successfully placed'} ` +
           `${this.configuration.useLimitOrder ? 'limit' : 'market'} order ` +
-          `for ${order.quantity} x ${order.product.symbol} (${order.product.isin}) ` +
+          `for ${order.quantity} * ${order.product.symbol} (${order.product.isin}) ` +
           `at ${order.product.closePrice.toFixed(2)} ${order.product.currency} for a total of ` +
           `${(order.product.closePrice * order.quantity).toFixed(2)} ${order.product.currency} (${confirmation})`
       );
       await delay(1000);
     }
+  }
+
+  private async logPortfolioWithOrders(ownedProducts: OwnedProduct[], orders: Order[]) {
+    for (const order of orders) {
+      const ownedProduct = ownedProducts.find(
+        (x) =>
+          x.productData.isin === order.owned.productData.isin &&
+          x.productData.exchangeId === order.owned.productData.exchangeId
+      );
+      if (ownedProduct) {
+        ownedProduct.value += order.price * order.quantity;
+      }
+    }
+    this.logOwnedPortfolio(ownedProducts, true);
   }
 }
 

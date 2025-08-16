@@ -4,21 +4,30 @@ import { Buyer } from './buyer';
 import { Configuration } from './config';
 
 export class Scheduler {
-  constructor(private logger: Logger, private configuration: Configuration, buyer: Buyer) {
-    this.buyOnLaunch(buyer);
-    this.startScheduler(buyer);
+  constructor(private logger: Logger, private configuration: Configuration, private buyer: Buyer) {
+    this.runOnLaunch();
+    this.startScheduler();
   }
 
-  private startScheduler(buyer: Buyer) {
+  private startScheduler() {
     const cron = this.configuration.schedule;
-    schedule.scheduleJob(cron, () => buyer.buy());
-    this.logger.info(`Started DEGIRO Autobuy with cron schedule "${cron}"`);
+    schedule.scheduleJob(cron, () => this.buy());
+    this.logger.info(`Started DEGIROmatic scheduler with cron schedule "${cron}"`);
   }
 
-  private buyOnLaunch(buyer: Buyer) {
-    if (this.configuration.buyOnLaunch) {
-      this.logger.warn('Starting DEGIRO Autobuy on launch. Use with caution!');
-      buyer.buy();
+  private runOnLaunch() {
+    if (this.configuration.runOnLaunch) {
+      this.logger.warn('Starting DEGIROmatic on launch. Use with caution!');
+      this.buy();
+    }
+  }
+
+  private async buy() {
+    const successful = await this.buyer.buy();
+    if (successful) {
+      this.logger.info('DEGIROmatic run finished!\n');
+    } else {
+      this.logger.error('DEGIROmatic could not finish this run\n');
     }
   }
 }

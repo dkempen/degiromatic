@@ -20,8 +20,8 @@ export class ConfigurationLoader {
     .object({
       SYMBOL: z.string().min(1),
       ISIN: z.string().regex(/^[A-Z]{2}[A-Z0-9]{9}[0-9]$/, { error: 'Invalid ISIN format' }),
-      RATIO: z.coerce.number().min(1),
       EXCHANGE: z.coerce.number().min(1),
+      RATIO: z.coerce.number().min(1),
     })
     .transform((object) => this.toCamelCase(object) as unknown as Product);
 
@@ -33,12 +33,12 @@ export class ConfigurationLoader {
       MIN_CASH_INVEST: z.coerce.number().min(1).default(100),
       MAX_CASH_INVEST: z.coerce.number().min(1).default(2000),
       MAX_FEE_PERCENTAGE: z.coerce.number().nonnegative().optional(),
-      CASH_CURRENCY: z.string().length(3).default('EUR'),
       ALLOW_OPEN_ORDERS: this.boolean().default(false),
       USE_LIMIT_ORDER: this.boolean().default(true),
+      CASH_CURRENCY: z.string().length(3).default('EUR'),
       PORTFOLIO: z.array(this.productSchema).min(1),
       SCHEDULE: z.string().default('0 12 * * *'),
-      BUY_ON_LAUNCH: this.boolean().default(false),
+      RUN_ON_LAUNCH: this.boolean().default(false),
       DRY_RUN: this.boolean().default(true),
     })
     .transform((object) => this.toCamelCase(object) as unknown as Configuration);
@@ -81,7 +81,7 @@ export class ConfigurationLoader {
       ...configuration,
       degiroUsername: secret,
       degiroPassword: secret,
-      ...(configuration.degiroTotpSeed && { totpSeed: secret }),
+      ...(configuration.degiroTotpSeed && { degiroTotpSeed: secret }),
     };
     this.logger.debug('Loaded configuration: ' + JSON.stringify(logConfiguration, null, 2));
 
@@ -97,20 +97,20 @@ export interface Configuration {
   minCashInvest: number;
   maxCashInvest: number;
   maxFeePercentage?: number;
-  cashCurrency: string;
   allowOpenOrders: boolean;
   useLimitOrder: boolean;
+  cashCurrency: string;
   portfolio: Product[];
   schedule: string;
-  buyOnLaunch: boolean;
+  runOnLaunch: boolean;
   dryRun: boolean;
 }
 
 export interface Product {
   symbol: string;
   isin: string;
-  ratio: number;
   exchange: number;
+  ratio: number;
 }
 
 export interface Credentials {

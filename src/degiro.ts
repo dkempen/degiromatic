@@ -86,9 +86,9 @@ export class Degiro {
     return (await this.degiro.getOrders({ active: true })).orders.length > 0;
   }
 
-  public async searchProduct(isin: string, exchangeId: string): Promise<SearchProductResultType | undefined> {
+  public async searchProduct(isin: string, exchangeId: number): Promise<SearchProductResultType | undefined> {
     const matchingProducts = (await this.degiro.searchProduct({ text: isin })).filter((product) => {
-      return isin.toLowerCase() === product.isin.toLowerCase() && product.exchangeId === exchangeId;
+      return isin.toLowerCase() === product.isin.toLowerCase() && product.exchangeId === exchangeId.toString();
     });
 
     return matchingProducts.length > 0 ? matchingProducts[0] : undefined;

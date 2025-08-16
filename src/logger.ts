@@ -17,4 +17,11 @@ const level = process.env.LOG_LEVEL || 'info';
 const consoleStream = createStream(process.stdout, true);
 const fileStream = createStream(path.join(DATA_DIRECTORY, LOG_FILE));
 
-export const getLogger = () => pino({ level }, pino.multistream([{ stream: consoleStream }, { stream: fileStream }]));
+export const getLogger = () =>
+  pino(
+    { level },
+    pino.multistream([
+      { level, stream: consoleStream },
+      { level, stream: fileStream },
+    ])
+  );

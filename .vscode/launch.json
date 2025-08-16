@@ -9,7 +9,7 @@
       "request": "launch",
       "name": "Start",
       "program": "${workspaceFolder}/src/main.ts",
-      "preLaunchTask": "npm: build",
+      "preLaunchTask": "npm: build:dev",
       "internalConsoleOptions": "openOnSessionStart",
       "outputCapture": "std",
       "outFiles": ["${workspaceFolder}/dist/**/*.js"],

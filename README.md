@@ -7,7 +7,7 @@ Passively invest in ETFs or stocks with automated portfolio balancing via the DE
 - **Passive** - Set and forget, so you don't have to remember to invest your balance. Ideal with scheduled payments.
 - **Portfolio** - Define your ETFs or stocks portfolio with a target allocation ratio.
 - **Rebalancing** - Finds the optimal way to rebalance your portfolio with new orders to match your target allocation.
-- **Limits** - Set limits for maximum and minimum orders amounts, and maximum fees.
+- **Limits** - Set limits for maximum and minimum order amounts, and maximum fees.
 - **Scheduling** - Run monthly, daily, or anything in between on a custom schedule.
 - **Logging** - All decisions and orders are logged for monitoring and transparency.
 - **Dry mode** - Use dry mode to test and review before committing.
@@ -63,23 +63,23 @@ The tool is configured entirely via environment variables. This section describe
 | `MIN_CASH_INVEST`           | `number`  | ✓        | `100`        | Minimum total order amount in cash for a single run.                                     |
 | `MAX_CASH_INVEST`           | `number`  | ✓        | `2000`       | Maximum total order amount in cash for a single run.                                     |
 | `MAX_FEE_PERCENTAGE`        | `number`  | ✗        |              | The maximum fee allowed in percent of order amount to prevent high fees on small orders. |
-| `ALLOW_OPEN_ORDERS`         | `boolean` | ✓        | `false`      | If `false`, not place orders if there are open orders in your account.                   |
+| `ALLOW_OPEN_ORDERS`         | `boolean` | ✓        | `false`      | If `false`, do not place orders if there are open orders in your account.                |
 | `USE_LIMIT_ORDER`           | `boolean` | ✓        | `true`       | If `true`, use limit orders. If `false`, use market orders.                              |
 | `CASH_CURRENCY`             | `string`  | ✓        | `EUR`        | Currency of cash in your DEGIRO account (3-letter code seen next to the cash balance).   |
 | **Portfolio products**      |           |          |              |                                                                                          |
 | `PRODUCT_<SYMBOL>_ISIN`     | `string`  | ✓        |              | ISIN identifier for the product.                                                         |
-| `PRODUCT_<SYMBOL>_EXCHANGE` | `number`  | ✓        |              | ID of the exchange to buy the product from (E.g. EAM is 200, NSY is 676 and NDQ is 663). |
+| `PRODUCT_<SYMBOL>_EXCHANGE` | `number`  | ✓        |              | ID of the exchange to buy the product from (e.g. EAM: 200, NSY: 676, and NDQ: 663).      |
 | `PRODUCT_<SYMBOL>_RATIO`    | `number`  | ✓        |              | Desired relative ratio allocation for the product in your portfolio.                     |
 | **Run settings**            |           |          |              |                                                                                          |
 | `SCHEDULE`                  | `string`  | ✓        | `0 12 * * *` | [Cron schedule](https://crontab.guru/) for when to run the tool.                         |
 | `RUN_ON_LAUNCH`             | `boolean` | ✓        | `false`      | If `true`, immediately run on launch instead of waiting for schedule. Use with caution!  |
 | `DRY_RUN`                   | `boolean` | ✓        | `true`       | If `true`, no actual orders are placed. Only set to `false` if you are done testing!     |
-| `LOG_LEVEL`                 | `string`  | ✓        | `info`       | Application log level (E.g. `error`, `warn`, `info` or `debug`).                         |
+| `LOG_LEVEL`                 | `string`  | ✓        | `info`       | Application log level (e.g. `error`, `warn`, `info` or `debug`).                         |
 | `TZ`                        | `string`  | ✗        | `UTC`        | Time zone identifier used by the logs and cron schedule. For example `Europe/Amsterdam`. |
 
 ### Persistence
 
-The logs and login session data persist inside the `/data` directory. Which can optionally be mounted for outside access and persistence.
+The logs and login session data persist inside the `/data` directory, which can optionally be mounted for outside access and persistence.
 
 ### Portfolio
 
@@ -141,7 +141,7 @@ The exchange ID is the same for all products on the same exchange, so you only n
 2. Now search the product by symbol (ticker) or ISIN in the search bar in the top left.
 3. Look for a request like this `https://trader.degiro.nl/productsearch/secure/v1/lookup?searchText=IE00B3RBWM25`, and view the response data.
 4. Click on the product on the exchange you want.
-5. Confirm that the exchange the one you want on the details page of the product.
+5. Confirm that the exchange is the one you want on the details page of the product.
 6. Take note of the product ID (in this case `4586985`) by looking at the URL on the details page `https://trader.degiro.nl/trader/#/products/4586985/overview`.
 7. Look up the product ID in the open request response data from step 3 and copy the exchange ID (`exchangeId`). In this case `200` for `EAM`, Euronext Amsterdam.
 

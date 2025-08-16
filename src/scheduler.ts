@@ -5,6 +5,7 @@ import { Configuration } from './config';
 
 export class Scheduler {
   constructor(private logger: Logger, private configuration: Configuration, private buyer: Buyer) {
+    this.gracefulShutdown();
     this.runOnLaunch();
     this.startScheduler();
   }
@@ -20,6 +21,13 @@ export class Scheduler {
       this.logger.warn('Starting DEGIROmatic on launch. Use with caution!');
       this.buy();
     }
+  }
+
+  private gracefulShutdown() {
+    process.on('SIGTERM', async () => {
+      await schedule.gracefulShutdown();
+      process.exit(0);
+    });
   }
 
   private async buy() {

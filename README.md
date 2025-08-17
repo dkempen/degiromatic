@@ -30,7 +30,7 @@ Install using Docker Compose by copying the compose example below or the [`compo
 ```yaml
 services:
   degiromatic:
-    image: ghcr.io/dkempen/degiromatic
+    image: ghcr.io/dkempen/degiromatic:1
     container_name: degiromatic
     restart: unless-stopped
     environment:

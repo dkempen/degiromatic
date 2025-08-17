@@ -1,6 +1,6 @@
 services:
   degiromatic:
-    image: ghcr.io/dkempen/degiromatic
+    image: ghcr.io/dkempen/degiromatic:1
     container_name: degiromatic
     restart: unless-stopped
     environment:

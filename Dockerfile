@@ -6,9 +6,9 @@ COPY package*.json .
 RUN npm ci
 COPY . .
 RUN npm run build
-RUN npm prune --omit=dev
-RUN clean-modules clean -y "**/*.d.ts"
-RUN find node_modules -type d -empty -delete
+RUN npm prune --omit=dev && \
+    clean-modules clean -y "**/*.d.ts" && \
+    find node_modules -type d -empty -delete
 
 FROM gcr.io/distroless/nodejs24-debian12 AS production
 

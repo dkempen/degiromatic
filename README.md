@@ -81,6 +81,10 @@ The tool is configured entirely via environment variables. This section describe
 
 The logs and login session data persist inside the `/data` directory, which can optionally be mounted for outside access and persistence.
 
+Optionally, the container can be run as another user with the user instruction syntax: `user: UID:GID`.
+For example `user: 1000:1000` in the compose file.
+When doing so, make sure that the user has permission to write to the data directory.
+
 ### Portfolio
 
 The tool uses configuration details to build the desired portfolio and place product orders automatically.

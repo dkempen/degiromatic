@@ -1,7 +1,7 @@
 {
   "name": "degiromatic",
   "version": "1.0.0",
-  "description": "Passively invest in ETFs or stocks with automated portfolio balancing via the DEGIRO broker.",
+  "description": "Automated and passive ETF and stock portfolio investing via the DEGIRO broker.",
   "main": "dist/src/main.js",
   "scripts": {
     "start": "npm run build && node ./dist/src/main.js",

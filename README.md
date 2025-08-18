@@ -1,6 +1,11 @@
 # DEGIROmatic
 
-Passively invest in ETFs or stocks with automated portfolio balancing via the DEGIRO broker.
+[![Version][version-badge]][version]
+[![Docker][docker-badge]][docker]
+[![CI][ci-badge]][ci]
+[![Stars][stars-badge]][stars]
+
+Automated and passive ETF and stock portfolio investing via the DEGIRO broker.
 
 ## Features
 
@@ -21,7 +26,7 @@ Passively invest in ETFs or stocks with automated portfolio balancing via the DE
 >
 > Use the **`DRY_RUN`** option that is enabled by default until you are certain that everything is in order, and that no unwanted trades will be executed.
 >
-> So use at your own risk. The software is provided as is without warranty of any kind under the [MIT license](LICENSE).
+> So use at your own risk. The software is provided as is without warranty of any kind under the [MIT license].
 
 ## Installation
 
@@ -71,7 +76,7 @@ The tool is configured entirely via environment variables. This section describe
 | `PRODUCT_<SYMBOL>_EXCHANGE` | `number`  | ✓        |              | ID of the exchange to buy the product from (e.g. EAM: 200, NSY: 676, and NDQ: 663).      |
 | `PRODUCT_<SYMBOL>_RATIO`    | `number`  | ✓        |              | Desired relative ratio allocation for the product in your portfolio.                     |
 | **Run settings**            |           |          |              |                                                                                          |
-| `SCHEDULE`                  | `string`  | ✓        | `0 12 * * *` | [Cron schedule](https://crontab.guru/) for when to run the tool.                         |
+| `SCHEDULE`                  | `string`  | ✓        | `0 12 * * *` | [Cron schedule] for when to run the tool.                                                |
 | `RUN_ON_LAUNCH`             | `boolean` | ✓        | `false`      | If `true`, immediately run on launch instead of waiting for schedule. Use with caution!  |
 | `DRY_RUN`                   | `boolean` | ✓        | `true`       | If `true`, no actual orders are placed. Only set to `false` if you are done testing!     |
 | `LOG_LEVEL`                 | `string`  | ✓        | `info`       | Application log level (e.g. `error`, `warn`, `info` or `debug`).                         |
@@ -87,8 +92,8 @@ When doing so, make sure that the user has permission to write to the data direc
 
 ### Portfolio
 
-The tool uses configuration details to build the desired portfolio and place product orders automatically.
-In the examples below, `VWRL` on the `EAM` exchange is used as a sample product.
+The tool uses the products configuration to build the desired portfolio and place product orders automatically.
+In the examples below, `VWRL` on the `EAM` exchange is used as an example product.
 
 #### Examples
 
@@ -127,17 +132,17 @@ However, it is useful to set the ratios to the exact percentages adding up to 10
 
 #### Symbol
 
-The symbol (or [ticker](https://www.degiro.nl/leren-beleggen/begrippenlijst/ticker)) is the 1 to 5 character long code that describes the exact financial product on an exchange.
+The symbol (or [ticker]) is the 1 to 5 character long code that describes the exact financial product on an exchange.
 For example the code for `Vanguard FTSE All-World UCITS ETF USD Dis` on the `EAM` exchange is `VWRL`. It is listed on the details page and next to the product.
 
 #### ISIN
 
-The [ISIN](https://www.degiro.nl/leren-beleggen/begrippenlijst/isin) is the 12 character long code that describes the exact financial product on an exchange.
+The [ISIN] is the 12 character long code that describes the exact financial product on an exchange.
 For example the code for `VWRL` on the `EAM` exchange is `IE00B3RBWM25`. It is listed on the details page and next to the product.
 
 #### Exchange ID
 
-The exact same product can often be bought on different [exchanges](https://www.degiro.nl/leren-beleggen/begrippenlijst/beurs).
+The exact same product can often be bought on different [exchanges].
 So in order to specify which one, a couple of steps are needed.
 The exchange ID is the same for all products on the same exchange, so you only need to look this up once per exchange.
 
@@ -151,7 +156,7 @@ The exchange ID is the same for all products on the same exchange, so you only n
 
 ## Development
 
-1. Install [Node.js](https://nodejs.org/)
+1. Install [Node.js]
 2. Clone this repository
 3. Copy [`example.env`](example.env) to `.env` and update the configuration
 4. Install dependencies and run:
@@ -160,3 +165,18 @@ The exchange ID is the same for all products on the same exchange, so you only n
 npm i
 npm start
 ```
+
+[version]: https://github.com/dkempen/degiromatic/releases
+[version-badge]: https://img.shields.io/github/v/release/dkempen/degiromatic?label=Version
+[docker]: https://github.com/dkempen/degiromatic/pkgs/container/degiromatic
+[docker-badge]: https://img.shields.io/badge/Docker-1D63ED?logo=docker&logoColor=fff
+[ci]: https://github.com/dkempen/degiromatic/actions/workflows/ci.yaml
+[ci-badge]: https://img.shields.io/github/actions/workflow/status/dkempen/degiromatic/ci.yaml?label=CI
+[stars]: https://github.com/dkempen/degiromatic
+[stars-badge]: https://img.shields.io/github/stars/dkempen/degiromatic
+[mit license]: https://github.com/dkempen/degiromatic?tab=MIT-1-ov-file
+[cron schedule]: https://crontab.guru/
+[ticker]: https://www.degiro.nl/leren-beleggen/begrippenlijst/ticker
+[isin]: https://www.degiro.nl/leren-beleggen/begrippenlijst/isin
+[exchanges]: https://www.degiro.nl/leren-beleggen/begrippenlijst/beurs
+[node.js]: https://nodejs.org/

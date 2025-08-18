@@ -1,13 +1,21 @@
-name: Build and publish Docker image
+name: CI
 
 on:
   push:
     branches: [master]
-    tags: ['v*.*.*']
+    tags: [v*.*.*]
+    paths:
+      - src/**
+      - Dockerfile
+      - .dockerignore
+      - compose*.yaml
+      - package*.json
+      - tsconfig.json
+      - .github/workflows/**
 
 jobs:
   docker:
-    name: Docker
+    name: Publish Docker image
     runs-on: ubuntu-latest
     permissions:
       contents: read

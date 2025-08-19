@@ -8,7 +8,6 @@ on:
       - src/**
       - Dockerfile
       - .dockerignore
-      - compose*.yaml
       - package*.json
       - tsconfig.json
       - .github/workflows/**
@@ -31,7 +30,7 @@ jobs:
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
-            type=ref,event=branch
+            type=raw,value=dev,enable={{is_default_branch}}
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
             type=semver,pattern={{major}}

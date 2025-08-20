@@ -1,8 +1,6 @@
 {
   "name": "degiromatic",
-  "version": "1.0.0",
-  "description": "Automated and passive ETF and stock portfolio investing via the DEGIRO broker.",
-  "main": "dist/src/main.js",
+  "private": true,
   "scripts": {
     "start": "npm run build && node ./dist/src/main.js",
     "build": "tsc",

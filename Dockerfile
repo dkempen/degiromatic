@@ -5,7 +5,9 @@ RUN apk add --no-cache binutils
 COPY package*.json .
 RUN npm ci
 COPY . .
-RUN npm run bundle && bundle/generate-sea.sh /bin/degiromatic
+RUN chmod +x bundle/*.sh && \
+    npm run bundle && \
+    bundle/generate-sea.sh /bin/degiromatic
 RUN bundle/collect-deps.sh /bin/degiromatic
 
 FROM scratch AS run

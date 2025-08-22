@@ -1,20 +1,18 @@
-FROM node:24-alpine AS build
+FROM node:22-alpine AS build
 
 WORKDIR /app
-RUN npm i -g clean-modules
+RUN apk add --no-cache binutils
 COPY package*.json .
 RUN npm ci
 COPY . .
-RUN npm run build
-RUN npm prune --omit=dev && \
-    clean-modules clean -y "**/*.d.ts" && \
-    find node_modules -type d -empty -delete
+RUN npm run bundle && bundle/generate-sea.sh /bin/degiromatic
+RUN bundle/collect-deps.sh /bin/degiromatic
 
-FROM gcr.io/distroless/nodejs24-debian12 AS production
+FROM scratch AS run
 
-WORKDIR /app
-ENV NODE_ENV=production DATA_DIR=/data
-COPY --from=build /app/node_modules node_modules
-COPY --from=build /app/dist .
+ENV NODE_NO_WARNINGS=1 NODE_ENV=production DATA_DIR=/data
+COPY --from=build /deps/lib /lib
+COPY --from=build /deps/usr/lib /usr/lib
+COPY --from=build /bin/degiromatic /bin/degiromatic
 
-CMD ["src/main.js"]
+ENTRYPOINT ["/bin/degiromatic"]

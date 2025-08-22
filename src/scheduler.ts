@@ -1,10 +1,10 @@
-import schedule from 'node-schedule';
+import { Cron } from 'croner';
 import { Logger } from 'pino';
 import { Buyer } from './buyer';
 import { Configuration } from './config';
 
 export class Scheduler {
-  private job!: schedule.Job;
+  private job!: Cron;
 
   constructor(private logger: Logger, private configuration: Configuration, private buyer: Buyer) {
     this.gracefulShutdown();
@@ -14,7 +14,7 @@ export class Scheduler {
 
   private startScheduler() {
     const cron = this.configuration.schedule;
-    this.job = schedule.scheduleJob(cron, () => this.buy());
+    this.job = new Cron(cron, () => this.buy());
     this.logger.info(`Started DEGIROmatic with cron schedule "${cron}"`);
     this.logNextRunTime();
   }
@@ -22,14 +22,14 @@ export class Scheduler {
   private runOnLaunch() {
     if (this.configuration.runOnLaunch) {
       this.logger.warn('Starting DEGIROmatic on launch. Use with caution!');
-      this.job.invoke();
+      this.job.trigger();
     }
   }
 
   private gracefulShutdown() {
     ['SIGTERM', 'SIGINT', 'SIGHUP'].forEach((signal) => {
       process.on(signal, async () => {
-        await schedule.gracefulShutdown();
+        this.job.stop();
         process.exit(0);
       });
     });
@@ -46,7 +46,7 @@ export class Scheduler {
   }
 
   private logNextRunTime() {
-    const next = this.job.nextInvocation()!;
+    const next = this.job.nextRun()!;
     const date =
       `${next.getFullYear()}-${String(next.getMonth() + 1).padStart(2, '0')}-` +
       `${String(next.getDate()).padStart(2, '0')} ${String(next.getHours()).padStart(2, '0')}:` +

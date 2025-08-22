@@ -2,3 +2,4 @@
 !src
 !package*.json
 !tsconfig.json
+!bundle

@@ -199,15 +199,10 @@ export class Buyer {
       }
     }
 
-    // If maximum fee is not configured, the orders are ready to be placed.
-    if (!this.configuration.maxFeePercentage) {
-      return orders;
-    }
-
     // If there are orders above the maximum fee percentage, blacklist the order with the highest fee percentage and start from scratch.
     orders.sort((a, b) => b.feePercentage - a.feePercentage);
     const order = orders[0];
-    if (order.feePercentage > this.configuration.maxFeePercentage) {
+    if (this.configuration.maxFeePercentage && order.feePercentage > this.configuration.maxFeePercentage) {
       this.logger.info(
         `Product ${order.product.symbol} (${order.product.isin}) removed from order list ` +
           `because the fee of ${order.fee.toFixed(2)} ${order.product.currency} ` +
@@ -225,7 +220,11 @@ export class Buyer {
       return this.calculateOptimalOrderList(orders, investableCash);
     }
 
-    // If there are no orders above the maximum fee, the orders are ready to be placed.
+    // Only keep orders with at least 1 quantity
+    orders.forEach((order, i) => {
+      if (order.quantity === 0) orders.splice(i, 1);
+    });
+
     return orders;
   }
 

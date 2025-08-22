@@ -68,3 +68,10 @@ jobs:
           sbom: false
           cache-from: type=gha,scope=global
           cache-to: type=gha,mode=max,scope=global
+
+      - name: Update Docker Hub description
+        uses: peter-evans/dockerhub-description@v4
+        with:
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          short-description: ${{ github.event.repository.description }}

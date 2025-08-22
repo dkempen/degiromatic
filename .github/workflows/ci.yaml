@@ -25,9 +25,12 @@ jobs:
       IMAGE_NAME: ${{ github.repository }}
 
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
       - name: Set Docker metadata
-        id: meta
         uses: docker/metadata-action@v5
+        id: meta
         with:
           images: |
             ${{ env.IMAGE_NAME }}

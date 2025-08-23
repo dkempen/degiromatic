@@ -98,3 +98,4 @@ jobs:
           username: ${{ github.repository_owner }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
           short-description: ${{ github.event.repository.description }}
+          enable-url-completion: true

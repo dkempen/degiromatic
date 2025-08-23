@@ -1,7 +1,10 @@
 # DEGIROmatic
 
 [![Version][version-badge]][version]
-[![Docker][docker-badge]][docker]
+[![GitHub Container Registry][ghcr-badge]][ghcr]
+[![Docker Hub][dockerhub-badge]][dockerhub]
+[![Image size][size-badge]][dockerhub]
+[![Pulls][pulls-badge]][dockerhub]
 [![CI][ci-badge]][ci]
 [![Stars][stars-badge]][stars]
 
@@ -168,10 +171,14 @@ npm start
 
 [version]: https://github.com/dkempen/degiromatic/releases
 [version-badge]: https://img.shields.io/github/v/release/dkempen/degiromatic?label=Version
-[docker]: https://github.com/dkempen/degiromatic/pkgs/container/degiromatic
-[docker-badge]: https://img.shields.io/badge/Docker-1D63ED?logo=docker&logoColor=fff
+[size-badge]: https://img.shields.io/docker/image-size/dkempen/degiromatic?label=Size
+[pulls-badge]: https://img.shields.io/docker/pulls/dkempen/degiromatic?color=1284c5&label=Pulls
+[ghcr]: https://github.com/dkempen/degiromatic/pkgs/container/degiromatic
+[ghcr-badge]: https://img.shields.io/badge/GHCR-5f5f5f?logo=docker&logoColor=fff
+[dockerhub]: https://hub.docker.com/r/dkempen/degiromatic
+[dockerhub-badge]: https://img.shields.io/badge/Docker%20Hub-1284c5?logo=docker&logoColor=fff
 [ci]: https://github.com/dkempen/degiromatic/actions/workflows/ci.yaml
-[ci-badge]: https://img.shields.io/github/actions/workflow/status/dkempen/degiromatic/ci.yaml?label=CI
+[ci-badge]: https://img.shields.io/github/actions/workflow/status/dkempen/degiromatic/ci.yaml?logo=github&logoColor=fff&label=CI
 [stars]: https://github.com/dkempen/degiromatic
 [stars-badge]: https://img.shields.io/github/stars/dkempen/degiromatic
 [mit license]: https://github.com/dkempen/degiromatic?tab=MIT-1-ov-file

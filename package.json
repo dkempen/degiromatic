@@ -25,7 +25,7 @@
     "@rollup/plugin-node-resolve": "^16.0.1",
     "@rollup/plugin-terser": "^0.4.4",
     "@rollup/plugin-typescript": "^12.1.4",
-    "@tsconfig/node-lts": "^22.0.2",
+    "@tsconfig/node22": "^22.0.2",
     "@types/node": "^24.3.0",
     "@types/speakeasy": "^2.0.10",
     "eslint": "^9.33.0",

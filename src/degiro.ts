@@ -7,9 +7,9 @@ import {
 } from 'degiro-api/dist/enums';
 import { DeGiroSettupType as DeGiroSetupType, OrderType, SearchProductResultType } from 'degiro-api/dist/types';
 import fs from 'fs';
+import { TOTP } from 'otpauth';
 import path from 'path';
 import { Logger } from 'pino';
-import speakeasy from 'speakeasy';
 import { Configuration } from './config';
 import { DATA_DIRECTORY, SESSION_FILE } from './constants';
 
@@ -185,7 +185,7 @@ export class Degiro {
 
   private getOTP(): string | undefined {
     return this.configuration.degiroTotpSeed
-      ? speakeasy.totp({ secret: this.configuration.degiroTotpSeed })
+      ? new TOTP({ secret: this.configuration.degiroTotpSeed }).generate()
       : undefined;
   }
 }

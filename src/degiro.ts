@@ -120,7 +120,6 @@ export class Degiro {
       return 'Dry run. Not placing an actual order.';
     }
 
-    this.logger.info(`Placing order for ${quantity} of ${productId}`);
     const orderType = {
       buySell: DeGiroActions.BUY,
       orderType: limitOrder ? DeGiroMarketOrderTypes.LIMITED : DeGiroMarketOrderTypes.MARKET,

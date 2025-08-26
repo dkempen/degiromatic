@@ -251,6 +251,10 @@ export class Buyer {
 
   private async placeOrders(orders: Order[]) {
     for (const order of orders) {
+      if (!this.configuration.dryRun) {
+        this.logger.info('Waiting 5 seconds before placing order...');
+        await delay(5000);
+      }
       const confirmation = await this.degiro.placeOrder(
         order.product.id,
         order.quantity,
@@ -264,7 +268,6 @@ export class Buyer {
           `at ${order.product.closePrice.toFixed(2)} ${order.product.currency} for a total of ` +
           `${(order.product.closePrice * order.quantity).toFixed(2)} ${order.product.currency} (${confirmation})`
       );
-      await delay(1000);
     }
   }
 

@@ -99,3 +99,22 @@ jobs:
           password: ${{ secrets.DOCKERHUB_TOKEN }}
           short-description: ${{ github.event.repository.description }}
           enable-url-completion: true
+
+      - name: Get audit vulnerability count
+        id: audit
+        run: echo "count=$(npm run audit --silent)" >> $GITHUB_OUTPUT
+
+      - name: Create audit badge
+        uses: schneegans/dynamic-badges-action@v1.7.0
+        with:
+          auth: ${{ secrets.GIST_TOKEN }}
+          gistID: 53a33a94fb3ba48996d4284b44d26584
+          filename: audit.json
+          label: Vulnerabilities
+          message: ${{ steps.audit.outputs.count }}
+          valColorRange: ${{ steps.audit.outputs.count }}
+          minColorRange: 0
+          maxColorRange: 5
+          colorRangeSaturation: 72
+          colorRangeLightness: 46
+          invertColorRange: true

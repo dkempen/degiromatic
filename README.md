@@ -6,6 +6,7 @@
 [![Image size][size-badge]][dockerhub]
 [![Pulls][pulls-badge]][dockerhub]
 [![CI][ci-badge]][ci]
+[![Vulnerabilities][vulnerabilities-badge]][vulnerabilities]
 [![Stars][stars-badge]][stars]
 
 Automated and passive ETF and stock portfolio investing via the DEGIRO broker.
@@ -179,6 +180,8 @@ npm start
 [dockerhub-badge]: https://img.shields.io/badge/Docker%20Hub-1284c5?logo=docker&logoColor=fff
 [ci]: https://github.com/dkempen/degiromatic/actions/workflows/ci.yaml
 [ci-badge]: https://img.shields.io/github/actions/workflow/status/dkempen/degiromatic/ci.yaml?logo=github&logoColor=fff&label=CI
+[vulnerabilities]: package.json
+[vulnerabilities-badge]: https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/dkempen/53a33a94fb3ba48996d4284b44d26584/raw/audit.json
 [stars]: https://github.com/dkempen/degiromatic
 [stars-badge]: https://img.shields.io/github/stars/dkempen/degiromatic
 [mit license]: https://github.com/dkempen/degiromatic?tab=MIT-1-ov-file

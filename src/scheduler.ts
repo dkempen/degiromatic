@@ -2,6 +2,7 @@ import { Cron } from 'croner';
 import { Logger } from 'pino';
 import { Buyer } from './buyer';
 import { Configuration } from './config';
+import { logError } from './util';
 
 export class Scheduler {
   private job!: Cron;
@@ -36,7 +37,12 @@ export class Scheduler {
   }
 
   private async buy() {
-    const successful = await this.buyer.buy();
+    let successful = false;
+    try {
+      successful = await this.buyer.buy();
+    } catch (error) {
+      logError(this.logger, error);
+    }
     if (successful) {
       this.logger.info('DEGIROmatic run finished!\n');
     } else {

@@ -22,7 +22,7 @@ export class Degiro {
   constructor(private logger: Logger, private configuration: Configuration) {}
 
   public async login() {
-    if (this.degiro?.isLogin()) {
+    if (this.degiro?.isLogin({ secure: true })) {
       return;
     }
 

@@ -7,9 +7,9 @@ import {
 } from 'degiro-api/dist/enums';
 import { DeGiroSettupType as DeGiroSetupType, OrderType, SearchProductResultType } from 'degiro-api/dist/types';
 import fs from 'fs';
-import { TOTP } from 'otpauth';
 import path from 'path';
 import { Logger } from 'pino';
+import speakeasy from 'speakeasy';
 import { Configuration } from './config';
 import { DATA_DIRECTORY, SESSION_FILE } from './constants';
 
@@ -31,7 +31,7 @@ export class Degiro {
     this.degiro = new DeGiro({
       username: this.configuration.degiroUsername,
       pwd: this.configuration.degiroPassword,
-      oneTimePassword: this.getOTP(),
+      oneTimePassword: this.getOTP(this.configuration.degiroTotpSeed),
       jsessionId: this.session,
     } as DeGiroSetupType);
 
@@ -46,7 +46,7 @@ export class Degiro {
       this.degiro = new DeGiro({
         username: this.configuration.degiroUsername,
         pwd: this.configuration.degiroPassword,
-        oneTimePassword: this.getOTP(),
+        oneTimePassword: this.getOTP(this.configuration.degiroTotpSeed),
       } as DeGiroSetupType);
       try {
         await this.degiro.login();
@@ -182,10 +182,8 @@ export class Degiro {
     }
   }
 
-  private getOTP(): string | undefined {
-    return this.configuration.degiroTotpSeed
-      ? new TOTP({ secret: this.configuration.degiroTotpSeed }).generate()
-      : undefined;
+  private getOTP(secret?: string): string | undefined {
+    return secret ? speakeasy.totp({ secret, encoding: 'base32' }) : undefined;
   }
 }
 

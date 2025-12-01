@@ -8,7 +8,7 @@ on:
       - src/**
       - Dockerfile
       - .dockerignore
-      - package*.json
+      - pnpm-lock.json
       - tsconfig.json
       - bundle/**
       - .github/workflows/**
@@ -102,7 +102,7 @@ jobs:
 
       - name: Get audit vulnerability count
         id: audit
-        run: echo "count=$(npm run audit --silent)" >> $GITHUB_OUTPUT
+        run: echo "count=$(pnpm run audit --silent)" >> $GITHUB_OUTPUT
 
       - name: Create audit badge
         uses: schneegans/dynamic-badges-action@v1.7.0

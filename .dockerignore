@@ -1,5 +1,6 @@
 *
 !src
-!package*.json
+!package.json
+!pnpm-*.yaml
 !tsconfig.json
 !bundle

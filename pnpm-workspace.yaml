@@ -1,0 +1,2 @@
+verifyDepsBeforeRun: install
+minimumReleaseAge: 1440

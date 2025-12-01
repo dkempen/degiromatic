@@ -160,14 +160,14 @@ The exchange ID is the same for all products on the same exchange, so you only n
 
 ## Development
 
-1. Install [Node.js]
-2. Clone this repository
-3. Copy [`example.env`](example.env) to `.env` and update the configuration
-4. Install dependencies and run:
+1. Install [Node.js].
+2. Install [pnpm].
+3. Clone this repository.
+4. Copy [`example.env`](example.env) to `.env` and update the configuration.
+5. Install dependencies and run:
 
 ```shell
-npm i
-npm start
+pnpm start
 ```
 
 [version]: https://github.com/dkempen/degiromatic/releases
@@ -190,3 +190,4 @@ npm start
 [isin]: https://www.degiro.nl/leren-beleggen/begrippenlijst/isin
 [exchanges]: https://www.degiro.nl/leren-beleggen/begrippenlijst/beurs
 [node.js]: https://nodejs.org/
+[pnpm]: https://pnpm.io/

@@ -34,7 +34,7 @@ Automated and passive ETF and stock portfolio investing via the DEGIRO broker.
 
 ## Installation
 
-Install using Docker Compose by copying the compose example below or the [`compose.yaml`](compose.yaml) file.
+Install using Docker Compose by copying the compose example below or the [`compose.yaml`] file.
 
 ```yaml
 services:
@@ -80,7 +80,7 @@ The tool is configured entirely via environment variables. This section describe
 | `PRODUCT_<SYMBOL>_EXCHANGE` | `number`  | ✓        |              | ID of the exchange to buy the product from (e.g. EAM: 200, NSY: 676, and NDQ: 663).      |
 | `PRODUCT_<SYMBOL>_RATIO`    | `number`  | ✓        |              | Desired relative ratio allocation for the product in your portfolio.                     |
 | **Run settings**            |           |          |              |                                                                                          |
-| `SCHEDULE`                  | `string`  | ✓        | `0 12 * * *` | [Cron schedule] for when to run the tool.                                                |
+| `SCHEDULE`                  | `string`  | ✓        | `0 12 * * *` | Cron schedule for when to run the tool (see [schedule]).                                 |
 | `RUN_ON_LAUNCH`             | `boolean` | ✓        | `false`      | If `true`, immediately run on launch instead of waiting for schedule. Use with caution!  |
 | `DRY_RUN`                   | `boolean` | ✓        | `true`       | If `true`, no actual orders are placed. Only set to `false` if you are done testing!     |
 | `LOG_LEVEL`                 | `string`  | ✓        | `info`       | Application log level (e.g. `error`, `warn`, `info` or `debug`).                         |
@@ -158,12 +158,32 @@ The exchange ID is the same for all products on the same exchange, so you only n
 6. Take note of the product ID (in this case `4586985`) by looking at the URL on the details page `https://trader.degiro.nl/trader/#/products/4586985/overview`.
 7. Look up the product ID in the open request response data from step 3 and copy the exchange ID (`exchangeId`). In this case `200` for `EAM`, Euronext Amsterdam.
 
+### Schedule
+
+The `SCHEDULE` environment variable defines when the tool runs and attempts to buy products.
+It is not a problem if the schedule triggers more than necessary, as the tool will first check the cash amount before buying products.
+However, running it sparsely reduces log noise and is useful when you want to avoid buying at certain times or dates.
+
+The schedule uses the [cron syntax] with some additional features. See the [Croner docs] for pattern specifications.
+Legacy cron syntax has been disabled in Croner to allow for more complex schedules (see the examples).
+A minimum interval of 1 minute per schedule is enforced.
+You can also combine multiple cron schedules using a `;` separator in cases where a single pattern is insufficient.
+Below are a few example schedules:
+
+| Schedule                                          | Description                                                                                        |
+| ------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| `0 12 * * *`                                      | Every day at 12:00 (default)                                                                       |
+| `0 10,14 1 * *`                                   | On the 1st of every month at 10:00 and 14:00                                                       |
+| `0 8-17 * * mon-fri`                              | Every weekday, every hour from 8:00 to 17:00                                                       |
+| `0 12 * * mon#1`                                  | First Monday of the month at 12:00                                                                 |
+| `0 12 26-28 jan-nov mon-fri;0 12 2-4 jan mon-fri` | From the 26th to 28th of January to November and the 2nd to 4th of January at 12:00, weekdays only |
+
 ## Development
 
 1. Install [Node.js].
 2. Install [pnpm].
 3. Clone this repository.
-4. Copy [`example.env`](example.env) to `.env` and update the configuration.
+4. Copy [`example.env`] to `.env` and update the configuration.
 5. Install dependencies and run:
 
 ```shell
@@ -185,9 +205,13 @@ pnpm start
 [stars]: https://github.com/dkempen/degiromatic
 [stars-badge]: https://img.shields.io/github/stars/dkempen/degiromatic
 [mit license]: https://github.com/dkempen/degiromatic?tab=MIT-1-ov-file
-[cron schedule]: https://crontab.guru/
+[`compose.yaml`]: compose.yaml
+[schedule]: #schedule
 [ticker]: https://www.degiro.nl/leren-beleggen/begrippenlijst/ticker
 [isin]: https://www.degiro.nl/leren-beleggen/begrippenlijst/isin
 [exchanges]: https://www.degiro.nl/leren-beleggen/begrippenlijst/beurs
+[cron syntax]: https://crontab.guru/
+[croner docs]: https://github.com/hexagon/croner#pattern
 [node.js]: https://nodejs.org/
 [pnpm]: https://pnpm.io/
+[`example.env`]: example.env

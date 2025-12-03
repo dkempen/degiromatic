@@ -5,7 +5,8 @@ import { Configuration } from './config';
 import { logError } from './logger';
 
 export class Scheduler {
-  private job!: Cron;
+  private jobs!: Cron[];
+  private running = false;
 
   constructor(private logger: Logger, private configuration: Configuration, private buyer: Buyer) {
     this.gracefulShutdown();
@@ -14,41 +15,54 @@ export class Scheduler {
   }
 
   private startScheduler() {
-    const cron = this.configuration.schedule;
-    this.job = new Cron(cron, { interval: 60 }, () => this.buy());
-    this.logger.info(`Started DEGIROmatic with cron schedule "${cron}"`);
+    const schedules = this.configuration.schedule.split(';').map((schedule) => schedule.trim());
+    const settings = { legacyMode: false, interval: 60 };
+    try {
+      this.jobs = schedules.map((schedule) => new Cron(schedule, settings, () => this.buy()));
+    } catch {
+      this.logger.error(`Invalid cron schedule "${this.configuration.schedule}"`);
+      process.exit(1);
+    }
+    this.logger.info(`Started DEGIROmatic with cron schedule "${schedules.join('" and "')}"`);
     this.logNextRunTime();
   }
 
   private runOnLaunch() {
     if (this.configuration.runOnLaunch) {
       this.logger.warn('Starting DEGIROmatic on launch. Use with caution!');
-      this.job.trigger();
+      this.jobs[0].trigger();
     }
   }
 
   private gracefulShutdown() {
     ['SIGTERM', 'SIGINT', 'SIGHUP'].forEach((signal) => {
       process.on(signal, async () => {
-        this.job.stop();
+        this.jobs.forEach((job) => job.stop());
         process.exit(0);
       });
     });
   }
 
   private async buy() {
+    if (this.running) {
+      return;
+    }
+
     try {
+      this.running = true;
       await this.buyer.buy();
       this.logger.info('DEGIROmatic run finished!\n');
     } catch (error) {
       logError(this.logger, error);
       this.logger.error('DEGIROmatic could not finish this run\n');
+    } finally {
+      this.running = false;
+      this.logNextRunTime();
     }
-    this.logNextRunTime();
   }
 
   private logNextRunTime() {
-    const next = this.job.nextRun()!;
+    const next = new Date(Math.min(...this.jobs.map((job) => job.nextRun()!.getTime())));
     const date =
       `${next.getFullYear()}-${String(next.getMonth() + 1).padStart(2, '0')}-` +
       `${String(next.getDate()).padStart(2, '0')} ${String(next.getHours()).padStart(2, '0')}:` +

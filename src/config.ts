@@ -1,6 +1,6 @@
 import { Logger } from 'pino';
 import { z } from 'zod';
-import { exit } from './util';
+import { logError } from './logger';
 
 export class ConfigurationLoader {
   readonly configuration!: Configuration;
@@ -18,25 +18,28 @@ export class ConfigurationLoader {
 
   private readonly productSchema = z
     .object({
-      SYMBOL: z.string().min(1),
+      SYMBOL: z.string().nonempty().max(5),
       ISIN: z.string().regex(/^[A-Z]{2}[A-Z0-9]{9}[0-9]$/, { error: 'Invalid ISIN format' }),
-      EXCHANGE: z.coerce.number().min(1),
-      RATIO: z.coerce.number().min(1),
+      EXCHANGE: z.coerce.number().positive(),
+      RATIO: z.coerce.number().positive(),
     })
     .transform((object) => this.toCamelCase(object) as unknown as Product);
 
   private readonly configurationSchema = z
     .object({
-      DEGIRO_USERNAME: z.string().min(1),
-      DEGIRO_PASSWORD: z.string().min(1),
-      DEGIRO_TOTP_SEED: z.string().optional(),
-      MIN_CASH_INVEST: z.coerce.number().min(1).default(100),
-      MAX_CASH_INVEST: z.coerce.number().min(1).default(2000),
-      MAX_FEE_PERCENTAGE: z.coerce.number().nonnegative().optional(),
+      DEGIRO_USERNAME: z.string().nonempty(),
+      DEGIRO_PASSWORD: z.string().nonempty(),
+      DEGIRO_TOTP_SEED: z
+        .string()
+        .regex(/^[A-Z\d]{32}$/, { error: 'Invalid TOTP seed' })
+        .optional(),
+      MIN_CASH_INVEST: z.coerce.number().positive().default(100),
+      MAX_CASH_INVEST: z.coerce.number().positive().default(2000),
+      MAX_FEE_PERCENTAGE: z.coerce.number().positive().optional(),
       ALLOW_OPEN_ORDERS: this.boolean().default(false),
       USE_LIMIT_ORDER: this.boolean().default(true),
       CASH_CURRENCY: z.string().length(3).default('EUR'),
-      PORTFOLIO: z.array(this.productSchema).min(1),
+      PORTFOLIO: z.array(this.productSchema).nonempty(),
       SCHEDULE: z.string().default('0 12 * * *'),
       RUN_ON_LAUNCH: this.boolean().default(false),
       DRY_RUN: this.boolean().default(true),
@@ -46,8 +49,9 @@ export class ConfigurationLoader {
   constructor(private logger: Logger) {
     try {
       this.configuration = this.loadConfiguration();
-    } catch (e) {
-      exit(this.logger, e);
+    } catch (error) {
+      logError(logger, error);
+      process.exit(1);
     }
   }
 
@@ -69,8 +73,7 @@ export class ConfigurationLoader {
     const result = this.configurationSchema.safeParse({ ...process.env, PORTFOLIO });
 
     if (result.error) {
-      const error = `Invalid configuration:\n${z.prettifyError(result.error)}`;
-      exit(this.logger, new Error(error));
+      throw new Error(`Invalid configuration:\n${z.prettifyError(result.error)}`);
     }
 
     const configuration: Configuration = result.data!;

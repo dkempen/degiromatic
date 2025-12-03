@@ -2,16 +2,15 @@ import { SearchProductResultType } from 'degiro-api/dist/types';
 import { Logger } from 'pino';
 import { Configuration, Product } from './config';
 import { Degiro, OwnedProduct } from './degiro';
-import { delay, logError } from './util';
 
 export class Buyer {
   constructor(private logger: Logger, private configuration: Configuration, private degiro: Degiro) {}
 
-  public async buy(): Promise<boolean> {
+  public async buy(): Promise<void> {
     this.logger.info('Started DEGIROmatic');
 
     // Calculate ratio's for desired portfolio
-    const totalRatio = this.configuration.portfolio.reduce((sum, x) => sum + x.ratio, 0);
+    const totalRatio = this.configuration.portfolio.reduce((sum, product) => sum + product.ratio, 0);
     this.configuration.portfolio.forEach((product) => (product.ratio = product.ratio / totalRatio));
     this.configuration.portfolio.sort((a, b) => b.ratio - a.ratio);
 
@@ -22,12 +21,7 @@ export class Buyer {
     );
 
     // Login
-    try {
-      await this.degiro.login();
-    } catch (error) {
-      logError(this.logger, error);
-      return false;
-    }
+    await this.degiro.login();
 
     // Get cash funds
     const cash = await this.degiro.getCashFunds(this.configuration.cashCurrency);
@@ -38,12 +32,11 @@ export class Buyer {
         `Cash in account (${cash} ${this.configuration.cashCurrency}) ` +
           `is less than minimum cash funds (${this.configuration.minCashInvest} ${this.configuration.cashCurrency}).`
       );
-      return true;
+      return;
     }
 
     // Limit investment to cash funds and maximum investment amount
     const investableCash = Math.min(this.configuration.maxCashInvest, cash);
-
     this.logger.info(
       `Cash in account: ${cash} ${this.configuration.cashCurrency}, ` +
         `limiting investment to ${investableCash} ${this.configuration.cashCurrency}`
@@ -54,7 +47,7 @@ export class Buyer {
       const hasOpenOrders = await this.degiro.hasOpenOrders();
       if (hasOpenOrders) {
         this.logger.info(`There are currently open orders, doing nothing.`);
-        return true;
+        return;
       }
     }
 
@@ -63,12 +56,7 @@ export class Buyer {
 
     // Prepare order list
     let orderList: Order[] = [];
-    try {
-      orderList = await this.prepareOrderList(ownedProducts);
-    } catch (error) {
-      logError(this.logger, error);
-      return false;
-    }
+    orderList = await this.prepareOrderList(ownedProducts);
 
     // Calculate optimal order quantities
     await this.calculateOptimalOrderList(orderList, investableCash);
@@ -78,9 +66,6 @@ export class Buyer {
 
     // Log current ratios
     await this.logPortfolioWithOrders(ownedProducts, orderList);
-
-    // Finished!
-    return true;
   }
 
   private async getOwnedProducts(): Promise<OwnedProduct[]> {
@@ -140,13 +125,13 @@ export class Buyer {
     }
 
     // Calculate current ratios and log it
-    this.logOwnedPortfolio(orders.map((x) => x.owned));
+    this.logOwnedPortfolio(orders.map((order) => order.owned));
 
     return orders;
   }
 
   private logOwnedPortfolio(ownedProducts: OwnedProduct[], afterOrders: boolean = false) {
-    const ownedTotalValue = ownedProducts.reduce((sum, x) => sum + x.value, 0);
+    const ownedTotalValue = ownedProducts.reduce((sum, product) => sum + product.value, 0);
     this.logger.info(
       `Owned portfolio ${afterOrders ? 'after orders' : 'before orders'}: ${ownedProducts
         .map((product) => `${product.productData.symbol} (${((product.value / ownedTotalValue) * 100).toFixed(2)}%)`)
@@ -156,7 +141,7 @@ export class Buyer {
 
   private async calculateOptimalOrderList(orders: Order[], investableCash: number): Promise<Order[]> {
     // Get current owned value of all owned products
-    const ownedTotalValue = orders.reduce((sum, x) => sum + x.owned.value, 0);
+    const ownedTotalValue = orders.reduce((sum, order) => sum + order.owned.value, 0);
     const totalValue = ownedTotalValue + investableCash;
 
     // Loop and products to order list approaching by not exceeding the ratio and update the ratio
@@ -187,15 +172,15 @@ export class Buyer {
       orders.sort((a, b) => b.ratioError - a.ratioError);
       for (const order of orders) {
         order.quantity++;
-        this.updateRatio(order, totalValue);
         const leftoverCash = this.calculateLeftoverCash(orders, investableCash);
 
         if (leftoverCash < 0) {
           order.quantity--;
-          this.updateRatio(order, totalValue);
         } else {
           added = true;
         }
+
+        this.updateRatio(order, totalValue);
       }
     }
 
@@ -252,10 +237,9 @@ export class Buyer {
   private async placeOrders(orders: Order[]) {
     for (const order of orders) {
       if (!this.configuration.dryRun) {
-        this.logger.info('Waiting 5 seconds before placing order...');
-        await delay(5000);
+        await new Promise((resolve) => setTimeout(resolve, 5000));
       }
-      const confirmation = await this.degiro.placeOrder(
+      const confirmationId = await this.degiro.placeOrder(
         order.product.id,
         order.quantity,
         this.configuration.useLimitOrder ? order.price : undefined,
@@ -266,7 +250,7 @@ export class Buyer {
           `${this.configuration.useLimitOrder ? 'limit' : 'market'} order ` +
           `for ${order.quantity} * ${order.product.symbol} (${order.product.isin}) ` +
           `at ${order.product.closePrice.toFixed(2)} ${order.product.currency} for a total of ` +
-          `${(order.product.closePrice * order.quantity).toFixed(2)} ${order.product.currency} (${confirmation})`
+          `${(order.product.closePrice * order.quantity).toFixed(2)} ${order.product.currency} (id: ${confirmationId})`
       );
     }
   }
@@ -274,9 +258,9 @@ export class Buyer {
   private async logPortfolioWithOrders(ownedProducts: OwnedProduct[], orders: Order[]) {
     for (const order of orders) {
       const ownedProduct = ownedProducts.find(
-        (x) =>
-          x.productData.isin === order.owned.productData.isin &&
-          x.productData.exchangeId === order.owned.productData.exchangeId
+        (product) =>
+          product.productData.isin === order.owned.productData.isin &&
+          product.productData.exchangeId === order.owned.productData.exchangeId
       );
       if (ownedProduct) {
         ownedProduct.value += order.price * order.quantity;

@@ -24,26 +24,21 @@ export class Degiro {
   public async login() {
     this.getSession();
 
-    this.degiro = new DeGiro({
+    const loginDetails: DeGiroSetupType = {
       username: this.configuration.degiroUsername,
       pwd: this.configuration.degiroPassword,
       oneTimePassword: this.getOTP(this.configuration.degiroTotpSeed),
-      jsessionId: this.session,
-    } as DeGiroSetupType);
+    };
+    this.degiro = new DeGiro({ ...loginDetails, jsessionId: this.session });
 
     this.logger.info('Logging in');
     try {
       await this.degiro.login();
       const accountData = await this.degiro.getAccountData();
       this.accountId = accountData.data.id;
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    } catch (e) {
+    } catch {
       // Session ID is invalid or expired, login with username and password
-      this.degiro = new DeGiro({
-        username: this.configuration.degiroUsername,
-        pwd: this.configuration.degiroPassword,
-        oneTimePassword: this.getOTP(this.configuration.degiroTotpSeed),
-      } as DeGiroSetupType);
+      this.degiro = new DeGiro(loginDetails);
       try {
         await this.degiro.login();
         const accountData = await this.degiro.getAccountData();
@@ -73,9 +68,7 @@ export class Degiro {
   }
 
   public async getPortfolio(): Promise<OwnedProduct[]> {
-    return (await this.degiro.getPortfolio({ type: PORTFOLIO_POSITIONS_TYPE_ENUM.OPEN, getProductDetails: true })).map(
-      (x) => x
-    );
+    return await this.degiro.getPortfolio({ type: PORTFOLIO_POSITIONS_TYPE_ENUM.OPEN, getProductDetails: true });
   }
 
   public async hasOpenOrders(): Promise<boolean> {
@@ -107,7 +100,6 @@ export class Degiro {
     }
 
     const order = (await this.degiro.createOrder(orderType)) as unknown as OrderDetails;
-    // const isInCoreSelection = order.messages.includes("trader.orderConfirmation.freeETFCommissionNotice");
     return order.transactionFee;
   }
 
@@ -116,18 +108,18 @@ export class Degiro {
       return 'Dry run. Not placing an actual order.';
     }
 
-    const orderType = {
+    const orderType: OrderType = {
       buySell: DeGiroActions.BUY,
       orderType: limitOrder ? DeGiroMarketOrderTypes.LIMITED : DeGiroMarketOrderTypes.MARKET,
       timeType: DeGiroTimeTypes.DAY,
       productId,
       size: quantity,
       price: limitOrder,
-    } as OrderType;
+    };
     try {
       const order = await this.degiro.createOrder(orderType);
-      const confirmation = await this.degiro.executeOrder(orderType, order.confirmationId);
-      return confirmation.toString();
+      const confirmationId = await this.degiro.executeOrder(orderType, order.confirmationId);
+      return confirmationId.toString();
     } catch (error) {
       return `Error during ordering: ${JSON.stringify(error)}`;
     }
@@ -147,9 +139,12 @@ export class Degiro {
     const headers = { Origin: 'https://trader.degiro.nl/' };
     const url = `${host}${endpoint}?${params}`;
     const response = await fetch(url, { headers });
-    const result = await response.json();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return (result as any).series[0].data.lastPrice as number | undefined;
+
+    interface MarketApiResult {
+      series: { data: { lastPrice?: number } }[];
+    }
+
+    return ((await response.json()) as MarketApiResult).series[0].data.lastPrice;
   }
 
   private getSession() {
@@ -159,10 +154,10 @@ export class Degiro {
 
     try {
       this.session = fs.readFileSync(this.sessionFilePath, 'utf8');
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (e: any) {
-      if (e.code !== 'ENOENT') {
-        this.logger.error(`Error while reading session file: ${e}`);
+    } catch (exception: unknown) {
+      const error = exception as NodeJS.ErrnoException;
+      if (error.code !== 'ENOENT') {
+        this.logger.error(`Error while reading session file: ${error}`);
       }
     }
   }
@@ -172,8 +167,8 @@ export class Degiro {
     if (session && session !== this.session) {
       try {
         fs.writeFileSync(this.sessionFilePath, session, 'utf8');
-      } catch (e) {
-        this.logger.error(`Error while writing session file: ${e}`);
+      } catch (error) {
+        this.logger.error(`Error while writing session file: ${error}`);
       }
     }
   }

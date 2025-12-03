@@ -1,5 +1,5 @@
 import path from 'path';
-import pino from 'pino';
+import pino, { Logger } from 'pino';
 import pretty from 'pino-pretty';
 import { DATA_DIRECTORY, LOG_FILE } from './constants';
 
@@ -25,3 +25,6 @@ export const getLogger = () =>
       { level, stream: fileStream },
     ])
   );
+
+export const logError = (logger: Logger, error: unknown) =>
+  logger.error(error instanceof Error ? error.message : `Unknown Error: "${error}"`);

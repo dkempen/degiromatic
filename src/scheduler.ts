@@ -2,7 +2,7 @@ import { Cron } from 'croner';
 import { Logger } from 'pino';
 import { Buyer } from './buyer';
 import { Configuration } from './config';
-import { logError } from './util';
+import { logError } from './logger';
 
 export class Scheduler {
   private job!: Cron;
@@ -15,7 +15,7 @@ export class Scheduler {
 
   private startScheduler() {
     const cron = this.configuration.schedule;
-    this.job = new Cron(cron, () => this.buy());
+    this.job = new Cron(cron, { interval: 60 }, () => this.buy());
     this.logger.info(`Started DEGIROmatic with cron schedule "${cron}"`);
     this.logNextRunTime();
   }
@@ -37,15 +37,11 @@ export class Scheduler {
   }
 
   private async buy() {
-    let successful = false;
     try {
-      successful = await this.buyer.buy();
+      await this.buyer.buy();
+      this.logger.info('DEGIROmatic run finished!\n');
     } catch (error) {
       logError(this.logger, error);
-    }
-    if (successful) {
-      this.logger.info('DEGIROmatic run finished!\n');
-    } else {
       this.logger.error('DEGIROmatic could not finish this run\n');
     }
     this.logNextRunTime();

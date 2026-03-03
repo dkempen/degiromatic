@@ -8,7 +8,11 @@ export class Scheduler {
   private jobs!: Cron[];
   private running = false;
 
-  constructor(private logger: Logger, private configuration: Configuration, private buyer: Buyer) {
+  constructor(
+    private logger: Logger,
+    private configuration: Configuration,
+    private buyer: Buyer
+  ) {
     this.gracefulShutdown();
     this.startScheduler();
     this.runOnLaunch();

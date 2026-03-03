@@ -7,3 +7,8 @@ services:
     env_file: .env
     volumes:
       - ./data:/data
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL

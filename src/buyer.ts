@@ -4,7 +4,11 @@ import { Configuration, Product } from './config';
 import { Degiro, OwnedProduct } from './degiro';
 
 export class Buyer {
-  constructor(private logger: Logger, private configuration: Configuration, private degiro: Degiro) {}
+  constructor(
+    private logger: Logger,
+    private configuration: Configuration,
+    private degiro: Degiro
+  ) {}
 
   public async buy(): Promise<void> {
     this.logger.info('Started DEGIROmatic');
@@ -55,8 +59,7 @@ export class Buyer {
     const ownedProducts = await this.getOwnedProducts();
 
     // Prepare order list
-    let orderList: Order[] = [];
-    orderList = await this.prepareOrderList(ownedProducts);
+    const orderList = await this.prepareOrderList(ownedProducts);
 
     // Calculate optimal order quantities
     await this.calculateOptimalOrderList(orderList, investableCash);

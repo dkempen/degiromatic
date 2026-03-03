@@ -18,8 +18,10 @@ Automated and passive ETF and stock portfolio investing via the DEGIRO broker.
 - **Rebalancing** - Finds the optimal way to rebalance your portfolio with new orders to match your target allocation.
 - **Limits** - Set limits for maximum and minimum order amounts, and maximum fees.
 - **Scheduling** - Run monthly, daily, or anything in between on a custom schedule.
-- **Logging** - All decisions and orders are logged for monitoring and transparency.
-- **Dry mode** - Use dry mode to test and review before committing.
+- **Logging** - All decisions and orders are logged in the console and log file for monitoring and transparency.
+- **Dry run** - Use dry run mode to test and review before committing.
+- **Secure** - The container image runs rootless and distroless, and ships only a single binary with minimal dependencies using pnpm.
+- **Private** - Fully local, no telemetry, only connects to DEGIRO directly.
 
 ## Disclaimer
 
@@ -54,6 +56,13 @@ services:
       TZ: Europe/Amsterdam
     volumes:
       - ./data:/data
+    # Security settings
+    user: uid:gid # Run the container as non-root user
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
 ```
 
 ## Configuration
@@ -62,37 +71,29 @@ The tool is configured entirely via environment variables. This section describe
 
 ### Environment variables
 
-| Name                        | Type      | Required | Default      | Description                                                                              |
-| --------------------------- | --------- | -------- | ------------ | ---------------------------------------------------------------------------------------- |
-| **Credentials**             |           |          |              |                                                                                          |
-| `DEGIRO_USERNAME`           | `string`  | ✓        |              | Username of your DEGIRO account.                                                         |
-| `DEGIRO_PASSWORD`           | `string`  | ✓        |              | Password of your DEGIRO account (use .env or Docker Secrets!).                           |
-| `DEGIRO_TOTP_SEED`          | `string`  | ✗        |              | The TOTP seed (optional) for two-factor authentication (use .env or Docker Secrets!).    |
-| **Broker settings**         |           |          |              |                                                                                          |
-| `MIN_CASH_INVEST`           | `number`  | ✓        | `100`        | Minimum total order amount in cash for a single run.                                     |
-| `MAX_CASH_INVEST`           | `number`  | ✓        | `2000`       | Maximum total order amount in cash for a single run.                                     |
-| `MAX_FEE_PERCENTAGE`        | `number`  | ✗        |              | The maximum fee allowed in percent of order amount to prevent high fees on small orders. |
-| `ALLOW_OPEN_ORDERS`         | `boolean` | ✓        | `false`      | If `false`, do not place orders if there are open orders in your account.                |
-| `USE_LIMIT_ORDER`           | `boolean` | ✓        | `true`       | If `true`, use limit orders. If `false`, use market orders.                              |
-| `CASH_CURRENCY`             | `string`  | ✓        | `EUR`        | Currency of cash in your DEGIRO account (3-letter code seen next to the cash balance).   |
-| **Portfolio products**      |           |          |              |                                                                                          |
-| `PRODUCT_<SYMBOL>_ISIN`     | `string`  | ✓        |              | ISIN identifier for the product.                                                         |
-| `PRODUCT_<SYMBOL>_EXCHANGE` | `number`  | ✓        |              | ID of the exchange to buy the product from (e.g. EAM: 200, NSY: 676, and NDQ: 663).      |
-| `PRODUCT_<SYMBOL>_RATIO`    | `number`  | ✓        |              | Desired relative ratio allocation for the product in your portfolio.                     |
-| **Run settings**            |           |          |              |                                                                                          |
-| `SCHEDULE`                  | `string`  | ✓        | `0 12 * * *` | Cron schedule for when to run the tool (see [schedule]).                                 |
-| `RUN_ON_LAUNCH`             | `boolean` | ✓        | `false`      | If `true`, immediately run on launch instead of waiting for schedule. Use with caution!  |
-| `DRY_RUN`                   | `boolean` | ✓        | `true`       | If `true`, no actual orders are placed. Only set to `false` if you are done testing!     |
-| `LOG_LEVEL`                 | `string`  | ✓        | `info`       | Application log level (e.g. `error`, `warn`, `info` or `debug`).                         |
-| `TZ`                        | `string`  | ✗        | `UTC`        | Time zone identifier used by the logs and cron schedule. For example `Europe/Amsterdam`. |
-
-### Persistence
-
-The logs and login session data persist inside the `/data` directory, which can optionally be mounted for outside access and persistence.
-
-Optionally, the container can be run as another user with the user instruction syntax: `user: UID:GID`.
-For example `user: 1000:1000` in the compose file.
-When doing so, make sure that the user has permission to write to the data directory.
+| Name                        | Type      | Required | Default      | Description                                                                                 |
+| --------------------------- | --------- | -------- | ------------ | ------------------------------------------------------------------------------------------- |
+| **Credentials**             |           |          |              |                                                                                             |
+| `DEGIRO_USERNAME`           | `string`  | ✓        |              | Username of your DEGIRO account.                                                            |
+| `DEGIRO_PASSWORD`           | `string`  | ✓        |              | Password of your DEGIRO account (use .env or Docker Secrets!).                              |
+| `DEGIRO_TOTP_SEED`          | `string`  | ✗        |              | The TOTP seed (optional) for two-factor authentication (use .env or Docker Secrets!).       |
+| **Broker settings**         |           |          |              |                                                                                             |
+| `MIN_CASH_INVEST`           | `number`  | ✓        | `100`        | Minimum total order amount in cash for a single run.                                        |
+| `MAX_CASH_INVEST`           | `number`  | ✓        | `2000`       | Maximum total order amount in cash for a single run.                                        |
+| `MAX_FEE_PERCENTAGE`        | `number`  | ✗        |              | The maximum fee allowed in percent of order amount to prevent high fees on small orders.    |
+| `ALLOW_OPEN_ORDERS`         | `boolean` | ✓        | `false`      | If `false`, do not place orders if there are open orders in your account.                   |
+| `USE_LIMIT_ORDER`           | `boolean` | ✓        | `true`       | If `true`, use limit orders. If `false`, use market orders.                                 |
+| `CASH_CURRENCY`             | `string`  | ✓        | `EUR`        | Currency of cash in your DEGIRO account (3-letter code seen next to the cash balance).      |
+| **Portfolio products**      |           |          |              |                                                                                             |
+| `PRODUCT_<SYMBOL>_ISIN`     | `string`  | ✓        |              | ISIN identifier for the product. (see [ISIN])                                               |
+| `PRODUCT_<SYMBOL>_EXCHANGE` | `number`  | ✓        |              | ID of the exchange to buy the product from (e.g. EAM: 200 or NSY: 676). (see [Exchange ID]) |
+| `PRODUCT_<SYMBOL>_RATIO`    | `number`  | ✓        |              | Desired relative ratio allocation for the product in your portfolio. (see [ratios])         |
+| **Run settings**            |           |          |              |                                                                                             |
+| `SCHEDULE`                  | `string`  | ✓        | `0 12 * * *` | Cron schedule for when to run the tool (see [schedule]).                                    |
+| `RUN_ON_LAUNCH`             | `boolean` | ✓        | `false`      | If `true`, immediately run on launch instead of waiting for schedule. Use with caution!     |
+| `DRY_RUN`                   | `boolean` | ✓        | `true`       | If `true`, no actual orders are placed. Only set to `false` if you are done testing!        |
+| `LOG_LEVEL`                 | `string`  | ✓        | `info`       | Application log level (e.g. `error`, `warn`, `info` or `debug`).                            |
+| `TZ`                        | `string`  | ✗        | `UTC`        | Time zone identifier used by the logs and cron schedule. For example `Europe/Amsterdam`.    |
 
 ### Portfolio
 
@@ -136,12 +137,12 @@ However, it is useful to set the ratios to the exact percentages adding up to 10
 
 #### Symbol
 
-The symbol (or [ticker]) is the 1 to 5 character long code that describes the exact financial product on an exchange.
+The symbol (or [ticker]) is the 1 to 5 character long code that describes a financial product on an exchange.
 For example the code for `Vanguard FTSE All-World UCITS ETF USD Dis` on the `EAM` exchange is `VWRL`. It is listed on the details page and next to the product.
 
 #### ISIN
 
-The [ISIN] is the 12 character long code that describes the exact financial product on an exchange.
+The [ISIN code] is the 12 character long code that describes the exact financial product on an exchange.
 For example the code for `VWRL` on the `EAM` exchange is `IE00B3RBWM25`. It is listed on the details page and next to the product.
 
 #### Exchange ID
@@ -178,6 +179,70 @@ Below are a few example schedules:
 | `0 12 * * mon#1`                                  | First Monday of the month at 12:00                                                                 |
 | `0 12 26-28 jan-nov mon-fri;0 12 2-4 jan mon-fri` | From the 26th to 28th of January to November and the 2nd to 4th of January at 12:00, weekdays only |
 
+## Persistence
+
+The log files and login session data persist inside the `/data` directory, which can optionally be mounted for outside access and persistence.
+The logs are also written to standard output.
+
+## Security
+
+Below are a couple of ways to make the container more secure to use.
+
+### Included security measures
+
+- Minimal dependencies
+- Uses the pnpm package manager
+- Uses the pnpm minimumReleaseAge setting to combat supply chain attacks
+- Container is fully distroless
+- Ships only a single binary
+- Bundled with tree shaking enabled to remove unused code
+
+### Rootless
+
+Optionally, for extra security, the container can be run as a non-root user with the user instruction syntax: `user: uid:gid`.
+Do so by adding the following line to the service in the compose file:
+
+```yaml
+user: 1000:1000
+```
+
+When doing so, make sure that the user has permission to write to the data directory.
+
+### Read-only filesystem
+
+Optionally, the container filesystem can be mounted as read-only to prevent runtime modifications and reduce the attack surface.
+Do so by adding the following line to the service in the compose file:
+
+```yaml
+read_only: true
+```
+
+Be aware that if the `/data` directory is not volume mapped, it will disable session token caching and file logging.
+If the volume mapping is configured, this option can be enabled with full app functionality.
+
+### Drop Linux capabilities
+
+Optionally, Linux capabilities can be restricted to minimize the privileges.
+To prevent privilege escalation, add:
+
+```yaml
+security_opt:
+  - no-new-privileges:true
+```
+
+To drop all default Linux capabilities, none of which are needed for the tool to function, add:
+
+```yaml
+cap_drop:
+  - ALL
+```
+
+### Network restrictions
+
+Ingress and egress network traffic can be disabled entirely.
+With the exception for 2 outbound domains needed for the tool to function:
+`trader.degiro.nl` for placing orders, and `charting.vwdservices.com` for real-time financial product pricing.
+
 ## Development
 
 1. Install [Node.js].
@@ -207,8 +272,10 @@ pnpm start
 [mit license]: https://github.com/dkempen/degiromatic?tab=MIT-1-ov-file
 [`compose.yaml`]: compose.yaml
 [schedule]: #schedule
+[exchange id]: #exchange-id
+[isin]: #isin
 [ticker]: https://www.degiro.nl/leren-beleggen/begrippenlijst/ticker
-[isin]: https://www.degiro.nl/leren-beleggen/begrippenlijst/isin
+[isin code]: https://www.degiro.nl/leren-beleggen/begrippenlijst/isin
 [exchanges]: https://www.degiro.nl/leren-beleggen/begrippenlijst/beurs
 [cron syntax]: https://crontab.guru/
 [croner docs]: https://github.com/hexagon/croner#pattern

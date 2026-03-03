@@ -15,3 +15,10 @@ services:
       TZ: Europe/Amsterdam
     volumes:
       - ./data:/data
+    # Security settings
+    user: uid:gid # Run the container as non-root user
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL

@@ -7,5 +7,6 @@
   "files.insertFinalNewline": true,
   "prettier.printWidth": 120,
   "prettier.singleQuote": true,
+  "prettier.trailingComma": "es5",
   "editor.tabSize": 2
 }

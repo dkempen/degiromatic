@@ -1,3 +1,4 @@
+import fs from 'fs';
 import path from 'path';
 import pino, { Logger } from 'pino';
 import pretty from 'pino-pretty';
@@ -15,16 +16,24 @@ const createStream = (destination: NodeJS.WritableStream | string, colorize = fa
 
 const level = process.env.LOG_LEVEL || 'info';
 const consoleStream = createStream(process.stdout, true);
-const fileStream = createStream(path.join(DATA_DIRECTORY, LOG_FILE));
 
-export const getLogger = () =>
-  pino(
-    { level },
-    pino.multistream([
-      { level, stream: consoleStream },
-      { level, stream: fileStream },
-    ])
-  );
+const logFilePath = path.join(DATA_DIRECTORY, LOG_FILE);
+
+const isFileWritable = (filePath: string): boolean => {
+  try {
+    fs.mkdirSync(path.dirname(filePath));
+    fs.closeSync(fs.openSync(filePath, 'a'));
+    return true;
+  } catch {
+    return false;
+  }
+};
+
+export const getLogger = () => {
+  const streams: { level: string; stream: NodeJS.WritableStream }[] = [{ level, stream: consoleStream }];
+  if (isFileWritable(logFilePath)) streams.push({ level, stream: createStream(logFilePath) });
+  return pino({ level }, pino.multistream(streams));
+};
 
 export const logError = (logger: Logger, error: unknown) =>
   logger.error(error instanceof Error ? error.message : `Unknown Error: "${error}"`);

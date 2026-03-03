@@ -9,45 +9,46 @@
     "docker": "docker compose -f compose.dev.yaml up --build",
     "lint": "eslint --max-warnings 0",
     "bundle": "rollup -c bundle/rollup.config.ts",
+    "update": "pnpm self-update && pnpm update && pnpm audit && pnpm update --latest --interactive",
     "audit": "pnpm audit --json | node -p \"Object.values(JSON.parse(require('fs').readFileSync(0,'utf8')).metadata.vulnerabilities).reduce((a,b)=>a+b,0)\""
   },
   "dependencies": {
-    "croner": "^9.1.0",
+    "croner": "^10.0.1",
     "degiro-api": "github:CasperVerswijvelt/degiro-api#60aaf6678a9aaca1a20d990555943b3d31d0721f",
-    "dotenv": "^17.2.3",
-    "pino": "^10.1.0",
+    "dotenv": "^17.3.1",
+    "pino": "^10.3.1",
     "pino-pretty": "github:pinojs/pino-pretty#99b1566c9961a25e586f7e9ae57fdc8438203d6e",
     "speakeasy": "^2.0.0",
-    "zod": "^4.1.13"
+    "zod": "^4.3.6"
   },
   "devDependencies": {
-    "@eslint/js": "^9.39.2",
+    "@eslint/js": "^10.0.1",
     "@rollup/plugin-commonjs": "^29.0.0",
     "@rollup/plugin-json": "^6.1.0",
     "@rollup/plugin-node-resolve": "^16.0.3",
     "@rollup/plugin-terser": "^0.4.4",
     "@rollup/plugin-typescript": "^12.3.0",
-    "@tsconfig/node24": "^24.0.3",
-    "@types/node": "^24.10.4",
+    "@tsconfig/node24": "^24.0.4",
     "@types/speakeasy": "^2.0.10",
-    "eslint": "^9.39.2",
-    "eslint-plugin-only-warn": "^1.1.0",
+    "eslint": "^10.0.2",
+    "eslint-plugin-only-warn": "^1.2.1",
     "jiti": "^2.6.1",
-    "rollup": "^4.53.3",
+    "rollup": "^4.59.0",
     "tsc-watch": "^7.2.0",
     "tslib": "^2.8.1",
     "typescript": "^5.9.3",
-    "typescript-eslint": "^8.49.0"
+    "typescript-eslint": "^8.56.1"
   },
   "pnpm": {
     "overrides": {
-      "node-fetch": "^3.3.2"
+      "node-fetch": "^3.3.2",
+      "serialize-javascript": "^7.0.3"
     },
     "allowedDeprecatedVersions": {
       "node-domexception": "1.0.0"
     }
   },
-  "packageManager": "pnpm@10.26.0",
+  "packageManager": "pnpm@10.30.3",
   "engines": {
     "node": ">=24",
     "pnpm": ">=10.16"

@@ -115,9 +115,3 @@ export interface Product {
   exchange: number;
   ratio: number;
 }
-
-export interface Credentials {
-  username: string;
-  password: string;
-  totpSeed?: string;
-}

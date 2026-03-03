@@ -19,7 +19,10 @@ export class Degiro {
   private accountId: number | undefined;
   private readonly sessionFilePath = path.join(DATA_DIRECTORY, SESSION_FILE);
 
-  constructor(private logger: Logger, private configuration: Configuration) {}
+  constructor(
+    private logger: Logger,
+    private configuration: Configuration
+  ) {}
 
   public async login() {
     this.getSession();
@@ -46,11 +49,13 @@ export class Degiro {
       } catch (error) {
         switch (error) {
           case 'totpNeeded':
-            throw new Error('No TOTP seed provided. Please add it to the environment variables.');
+            throw new Error('No TOTP seed provided. Please add it to the environment variables.', { cause: error });
           case 'badCredentials':
-            throw new Error('Invalid credentials. Please check if the environment variables are correct.');
+            throw new Error('Invalid credentials. Please check if the environment variables are correct.', {
+              cause: error,
+            });
           default:
-            throw new Error(`Error logging in: ${error}`);
+            throw new Error(`Error logging in: ${error}`, { cause: error });
         }
       }
     }
@@ -168,7 +173,7 @@ export class Degiro {
       try {
         fs.writeFileSync(this.sessionFilePath, session, 'utf8');
       } catch (error) {
-        this.logger.error(`Error while writing session file: ${error}`);
+        this.logger.debug(`Session file not used because file system is read only and not volume mapped: ${error}`);
       }
     }
   }

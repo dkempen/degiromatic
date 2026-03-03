@@ -20,7 +20,7 @@ Automated and passive ETF and stock portfolio investing via the DEGIRO broker.
 - **Scheduling** - Run monthly, daily, or anything in between on a custom schedule.
 - **Logging** - All decisions and orders are logged in the console and log file for monitoring and transparency.
 - **Dry run** - Use dry run mode to test and review before committing.
-- **Secure** - The container image runs rootless and distroless, and ships only a single binary with minimal dependencies using pnpm.
+- **Secure** - The container image runs rootless and distroless, and ships only a single binary.
 - **Private** - Fully local, no telemetry, only connects to DEGIRO directly.
 
 ## Disclaimer
@@ -67,7 +67,9 @@ services:
 
 ## Configuration
 
-The tool is configured entirely via environment variables. This section describes all available configuration options and their meanings. Only required variables without a default value have to be manually defined.
+The tool is configured entirely via environment variables.
+This section describes all available configuration options and their meanings.
+Only required variables without a default value have to be manually defined.
 
 ### Environment variables
 
@@ -196,6 +198,7 @@ Below are a couple of ways to make the container more secure to use.
 - Container is fully distroless
 - Ships only a single binary
 - Bundled with tree shaking enabled to remove unused code
+- Uses artifact [attestations] to verify a secure container image build process
 
 ### Rootless
 
@@ -279,6 +282,7 @@ pnpm start
 [exchanges]: https://www.degiro.nl/leren-beleggen/begrippenlijst/beurs
 [cron syntax]: https://crontab.guru/
 [croner docs]: https://github.com/hexagon/croner#pattern
+[attestations]: https://github.com/dkempen/degiromatic/attestations
 [node.js]: https://nodejs.org/
 [pnpm]: https://pnpm.io/
 [`example.env`]: example.env

@@ -94,7 +94,7 @@ Only required variables without a default value have to be manually defined.
 | `SCHEDULE`                  | `string`  | ✓        | `0 12 * * *` | Cron schedule for when to run the tool (see [schedule]).                                    |
 | `RUN_ON_LAUNCH`             | `boolean` | ✓        | `false`      | If `true`, immediately run on launch instead of waiting for schedule. Use with caution!     |
 | `DRY_RUN`                   | `boolean` | ✓        | `true`       | If `true`, no actual orders are placed. Only set to `false` if you are done testing!        |
-| `LOG_LEVEL`                 | `string`  | ✓        | `info`       | Application log level (e.g. `error`, `warn`, `info` or `debug`).                            |
+| `LOG_LEVEL`                 | `string`  | ✓        | `info`       | Application log level (e.g. `error`, `warning`, `info` or `debug`).                         |
 | `TZ`                        | `string`  | ✗        | `UTC`        | Time zone identifier used by the logs and cron schedule. For example `Europe/Amsterdam`.    |
 
 ### Portfolio

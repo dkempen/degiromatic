@@ -1,5 +1,5 @@
+import { Logger } from '@logtape/logtape';
 import { SearchProductResultType } from 'degiro-api/dist/types';
-import { Logger } from 'pino';
 import { Configuration, Product } from './config';
 import { Degiro, OwnedProduct } from './degiro';
 

@@ -1,3 +1,4 @@
+import { Logger } from '@logtape/logtape';
 import DeGiro from 'degiro-api';
 import {
   DeGiroActions,
@@ -8,7 +9,6 @@ import {
 import { DeGiroSettupType as DeGiroSetupType, OrderType, SearchProductResultType } from 'degiro-api/dist/types';
 import fs from 'fs';
 import path from 'path';
-import { Logger } from 'pino';
 import speakeasy from 'speakeasy';
 import { Configuration } from './config';
 import { DATA_DIRECTORY, SESSION_FILE } from './constants';

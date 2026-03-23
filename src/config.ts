@@ -1,4 +1,4 @@
-import { Logger } from 'pino';
+import { Logger } from '@logtape/logtape';
 import { z } from 'zod';
 import { logError } from './logger';
 

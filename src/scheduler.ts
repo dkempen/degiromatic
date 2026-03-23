@@ -1,5 +1,5 @@
+import { Logger } from '@logtape/logtape';
 import { Cron } from 'croner';
-import { Logger } from 'pino';
 import { Buyer } from './buyer';
 import { Configuration } from './config';
 import { logError } from './logger';
@@ -33,7 +33,7 @@ export class Scheduler {
 
   private runOnLaunch() {
     if (this.configuration.runOnLaunch) {
-      this.logger.warn('Starting DEGIROmatic on launch. Use with caution!');
+      this.logger.warning('Starting DEGIROmatic on launch. Use with caution!');
       this.jobs[0].trigger();
     }
   }

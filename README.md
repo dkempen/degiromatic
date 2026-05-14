@@ -89,9 +89,9 @@ Only required variables without a default value have to be manually defined.
 | **Portfolio products**      |           |          |              |                                                                                             |
 | `PRODUCT_<SYMBOL>_ISIN`     | `string`  | ✓        |              | ISIN identifier for the product. (see [ISIN])                                               |
 | `PRODUCT_<SYMBOL>_EXCHANGE` | `number`  | ✓        |              | ID of the exchange to buy the product from (e.g. EAM: 200 or NSY: 676). (see [Exchange ID]) |
-| `PRODUCT_<SYMBOL>_RATIO`    | `number`  | ✓        |              | Desired relative ratio allocation for the product in your portfolio. (see [ratios])         |
+| `PRODUCT_<SYMBOL>_RATIO`    | `number`  | ✓        |              | Desired relative ratio allocation for the product in your portfolio. (see [Ratios])         |
 | **Run settings**            |           |          |              |                                                                                             |
-| `SCHEDULE`                  | `string`  | ✓        | `0 12 * * *` | Cron schedule for when to run the tool (see [schedule]).                                    |
+| `SCHEDULE`                  | `string`  | ✓        | `0 12 * * *` | Cron schedule for when to run the tool (see [Schedule]).                                    |
 | `RUN_ON_LAUNCH`             | `boolean` | ✓        | `false`      | If `true`, immediately run on launch instead of waiting for schedule. Use with caution!     |
 | `DRY_RUN`                   | `boolean` | ✓        | `true`       | If `true`, no actual orders are placed. Only set to `false` if you are done testing!        |
 | `LOG_LEVEL`                 | `string`  | ✓        | `info`       | Logging level (e.g. `error`, `warning`, `info` or `debug`).                                 |

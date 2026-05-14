@@ -94,7 +94,7 @@ Only required variables without a default value have to be manually defined.
 | `SCHEDULE`                  | `string`  | ✓        | `0 12 * * *` | Cron schedule for when to run the tool (see [schedule]).                                    |
 | `RUN_ON_LAUNCH`             | `boolean` | ✓        | `false`      | If `true`, immediately run on launch instead of waiting for schedule. Use with caution!     |
 | `DRY_RUN`                   | `boolean` | ✓        | `true`       | If `true`, no actual orders are placed. Only set to `false` if you are done testing!        |
-| `LOG_LEVEL`                 | `string`  | ✓        | `info`       | Application log level (e.g. `error`, `warning`, `info` or `debug`).                         |
+| `LOG_LEVEL`                 | `string`  | ✓        | `info`       | Logging level (e.g. `error`, `warning`, `info` or `debug`).                                 |
 | `TZ`                        | `string`  | ✗        | `UTC`        | Time zone identifier used by the logs and cron schedule. For example `Europe/Amsterdam`.    |
 
 ### Portfolio
@@ -221,7 +221,7 @@ read_only: true
 ```
 
 Be aware that if the `/data` directory is not volume mapped, it will disable session token caching and file logging.
-If the volume mapping is configured, this option can be enabled with full app functionality.
+If the volume mapping is configured, this option can be enabled with full tool functionality.
 
 ### Drop Linux capabilities
 
@@ -275,8 +275,9 @@ pnpm start
 [mit license]: https://github.com/dkempen/degiromatic?tab=MIT-1-ov-file
 [`compose.yaml`]: compose.yaml
 [schedule]: #schedule
-[exchange id]: #exchange-id
 [isin]: #isin
+[exchange id]: #exchange-id
+[ratios]: #ratios
 [ticker]: https://www.degiro.nl/leren-beleggen/begrippenlijst/ticker
 [isin code]: https://www.degiro.nl/leren-beleggen/begrippenlijst/isin
 [exchanges]: https://www.degiro.nl/leren-beleggen/begrippenlijst/beurs

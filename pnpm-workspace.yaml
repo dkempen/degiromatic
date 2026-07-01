@@ -1,6 +1,7 @@
 verifyDepsBeforeRun: install
 minimumReleaseAge: 1440
 overrides:
+  isomorphic-fetch: ^3.0.0
   node-fetch: ^3.3.2
 allowedDeprecatedVersions:
   node-domexception: 1.0.0

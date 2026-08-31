@@ -41,6 +41,7 @@ export class Scheduler {
   private gracefulShutdown() {
     ['SIGTERM', 'SIGINT', 'SIGHUP'].forEach((signal) => {
       process.on(signal, async () => {
+        this.logger.info('Shutting down DEGIROmatic');
         this.jobs.forEach((job) => job.stop());
         process.exit(0);
       });
@@ -55,7 +56,7 @@ export class Scheduler {
     try {
       this.running = true;
       await this.buyer.buy();
-      this.logger.info('DEGIROmatic run finished!\n');
+      this.logger.info('DEGIROmatic run finished\n');
     } catch (error) {
       logError(this.logger, error);
       this.logger.error('DEGIROmatic could not finish this run\n');

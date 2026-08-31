@@ -110,7 +110,7 @@ export class Degiro {
 
   public async placeOrder(productId: string, quantity: number, limitOrder?: number, dryRun = true): Promise<string> {
     if (dryRun) {
-      return 'Dry run. Not placing an actual order.';
+      return 'Dry run, not placing an actual order';
     }
 
     const orderType: OrderType = {

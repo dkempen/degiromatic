@@ -34,7 +34,7 @@ export class Buyer {
     if (cash < this.configuration.minCashInvest) {
       this.logger.info(
         `Cash in account (${cash} ${this.configuration.cashCurrency}) ` +
-          `is less than minimum cash funds (${this.configuration.minCashInvest} ${this.configuration.cashCurrency}).`
+          `is less than minimum cash funds (${this.configuration.minCashInvest} ${this.configuration.cashCurrency})`
       );
       return;
     }
@@ -43,14 +43,14 @@ export class Buyer {
     const investableCash = Math.min(this.configuration.maxCashInvest, cash);
     this.logger.info(
       `Cash in account: ${cash} ${this.configuration.cashCurrency}, ` +
-        `limiting investment to ${investableCash} ${this.configuration.cashCurrency}`
+        `${investableCash < cash ? 'limiting investment' : 'investing up'} to ${investableCash} ${this.configuration.cashCurrency}`
     );
 
     // Check order history for open order if open orders are not allowed
     if (!this.configuration.allowOpenOrders) {
       const hasOpenOrders = await this.degiro.hasOpenOrders();
       if (hasOpenOrders) {
-        this.logger.info(`There are currently open orders, doing nothing.`);
+        this.logger.info(`There are currently open orders, doing nothing`);
         return;
       }
     }

@@ -1,5 +1,7 @@
 verifyDepsBeforeRun: install
 minimumReleaseAge: 1440
+update:
+  githubActions: true
 overrides:
   isomorphic-fetch: ^3.0.0
   node-fetch: ^3.3.2

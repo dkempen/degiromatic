@@ -116,7 +116,7 @@ export class Buyer {
         product: searchedProduct,
         owned: ownedProduct,
         configuration: product,
-        price: price + 0.02, // Add 2 cents to allow for price fluctuations
+        price: this.getLimitOrderPrice(price),
         fee: transactionFee,
         quantity: 0,
         ratio: 0,
@@ -131,6 +131,16 @@ export class Buyer {
     this.logOwnedPortfolio(orders.map((order) => order.owned));
 
     return orders;
+  }
+
+  // Add a buffer amount to the current ask price to allow for price fluctuations
+  private getLimitOrderPrice(price: number): number {
+    let buffer: number;
+    if (price < 10) buffer = 0.001;
+    else if (price < 100) buffer = 0.01;
+    else buffer = 0.02;
+
+    return Number((Math.round((price + buffer) / buffer) * buffer).toFixed(4));
   }
 
   private logOwnedPortfolio(ownedProducts: OwnedProduct[], afterOrders: boolean = false) {

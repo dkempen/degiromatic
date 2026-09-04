@@ -1,3 +1,4 @@
+// cSpell:ignore Settup, jsession, hchart, issueid, jsessionid
 import { Logger } from '@logtape/logtape';
 import DeGiro from 'degiro-api';
 import {

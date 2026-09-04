@@ -5,5 +5,24 @@
   "editor.codeActionsOnSave": { "source.organizeImports": "explicit" },
   "editor.formatOnSave": true,
   "files.insertFinalNewline": true,
-  "editor.tabSize": 2
+  "cSpell.words": [
+    "degiro",
+    "degiromatic",
+    "distroless",
+    "FTSE",
+    "IE000VAHT5T0",
+    "IEMA",
+    "isin",
+    "IWDA",
+    "logtape",
+    "rebalance",
+    "rebalancing",
+    "totp",
+    "Tradegate",
+    "UCITS",
+    "VALL",
+    "VGLA",
+    "vwdservices",
+    "Xetra"
+  ]
 }

@@ -8,10 +8,10 @@ services:
       DEGIRO_USERNAME: username
       DEGIRO_PASSWORD: password # Use .env or Docker Secrets!
       DEGIRO_TOTP_SEED: totp_seed # Use .env or Docker Secrets!
-      PRODUCT_VWRL_ISIN: IE00B3RBWM25 # Example product, replace with your configuration
-      PRODUCT_VWRL_EXCHANGE: 200
-      PRODUCT_VWRL_RATIO: 100
-      DRY_RUN: true # Set to false only when done testing
+      PRODUCT_VGLA_ISIN: IE000VAHT5T0 # Example product, replace with your configuration
+      PRODUCT_VGLA_EXCHANGE: 196
+      PRODUCT_VGLA_RATIO: 100
+      DRY_RUN: true # Set to false only when done testing your configuration
       TZ: Europe/Amsterdam
     volumes:
       - ./data:/data

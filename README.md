@@ -17,22 +17,25 @@ Automated and passive ETF and stock portfolio investing via the DEGIRO broker.
 - **Portfolio** - Define your ETFs or stocks portfolio with a target allocation ratio.
 - **Rebalancing** - Finds the optimal way to rebalance your portfolio with new orders to match your target allocation.
 - **Limits** - Set limits for maximum and minimum order amounts, and maximum fees.
-- **Scheduling** - Run monthly, daily, or anything in between on a custom schedule.
+- **Scheduling** - Run monthly, weekly, daily, or anything in between on a custom schedule. Making periodic investing easy.
 - **Logging** - All decisions and orders are logged in the console and log file for monitoring and transparency.
-- **Dry run** - Use dry run mode to test and review before committing.
-- **Secure** - The container image runs rootless and distroless, and ships only a single binary.
-- **Private** - Fully local, no telemetry, only connects to DEGIRO directly.
+- **Dry run** - Use dry run mode to test and review before placing real orders.
+- **Secure** - The container image runs rootless and distroless, and ships only a single binary. Along with other security measures.
+- **Private** - Fully local, self-hosted, zero telemetry, only connects to DEGIRO directly.
+- **Transparent** - The code is fully open source, the Docker image is built on GitHub Actions with attestations.
 
 ## Disclaimer
 
 > [!CAUTION]
 >
-> This tool buys financial products with **your** DEGIRO account, and handles **real money**!
-> Always, but especially in this case, review this open source code and your configuration **carefully** before running!
->
-> Use the **`DRY_RUN`** option that is enabled by default until you are certain that everything is in order, and that no unwanted trades will be executed.
->
-> So use at your own risk. The software is provided as is without warranty of any kind under the [MIT license].
+> - This tool places orders for financial products through **your** DEGIRO account, using **real money**.
+> - **Always start with `DRY_RUN` enabled** (the default).
+>   It simulates the order flow without placing any real orders.
+>   Carefully review the simulated orders and your configuration before disabling dry-run mode.
+> - Although this tool has been used for years without problems, always review the open source code carefully before allowing real orders to be placed.
+> - The software is provided "as is", without warranty of any kind, under the [MIT license].
+> - Any example products used in the documentation are for demonstration purposes only and do not constitute investment advice or recommendations.
+>   Always do your own research and choose investments that are right for your situation and goals.
 
 ## Installation
 
@@ -49,10 +52,10 @@ services:
       DEGIRO_USERNAME: username
       DEGIRO_PASSWORD: password # Use .env or Docker Secrets!
       DEGIRO_TOTP_SEED: totp_seed # Use .env or Docker Secrets!
-      PRODUCT_VWRL_ISIN: IE00B3RBWM25 # Example product, replace with your configuration
-      PRODUCT_VWRL_EXCHANGE: 200
-      PRODUCT_VWRL_RATIO: 100
-      DRY_RUN: true # Set to false only when done testing
+      PRODUCT_VGLA_ISIN: IE000VAHT5T0 # Example product, replace with your configuration
+      PRODUCT_VGLA_EXCHANGE: 196
+      PRODUCT_VGLA_RATIO: 100
+      DRY_RUN: true # Set to false only when done testing your configuration
       TZ: Europe/Amsterdam
     volumes:
       - ./data:/data
@@ -73,51 +76,69 @@ Only required variables without a default value have to be manually defined.
 
 ### Environment variables
 
-| Name                        | Type      | Required | Default      | Description                                                                                 |
-| --------------------------- | --------- | -------- | ------------ | ------------------------------------------------------------------------------------------- |
-| **Credentials**             |           |          |              |                                                                                             |
-| `DEGIRO_USERNAME`           | `string`  | ✓        |              | Username of your DEGIRO account.                                                            |
-| `DEGIRO_PASSWORD`           | `string`  | ✓        |              | Password of your DEGIRO account (use .env or Docker Secrets!).                              |
-| `DEGIRO_TOTP_SEED`          | `string`  | ✗        |              | The TOTP seed (optional) for two-factor authentication (use .env or Docker Secrets!).       |
-| **Broker settings**         |           |          |              |                                                                                             |
-| `MIN_CASH_INVEST`           | `number`  | ✓        | `100`        | Minimum total order amount in cash for a single run.                                        |
-| `MAX_CASH_INVEST`           | `number`  | ✓        | `2000`       | Maximum total order amount in cash for a single run.                                        |
-| `MAX_FEE_PERCENTAGE`        | `number`  | ✗        |              | The maximum fee allowed in percent of order amount to prevent high fees on small orders.    |
-| `ALLOW_OPEN_ORDERS`         | `boolean` | ✓        | `false`      | If `false`, do not place orders if there are open orders in your account.                   |
-| `USE_LIMIT_ORDER`           | `boolean` | ✓        | `true`       | If `true`, use limit orders. If `false`, use market orders.                                 |
-| `CASH_CURRENCY`             | `string`  | ✓        | `EUR`        | Currency of cash in your DEGIRO account (3-letter code seen next to the cash balance).      |
-| **Portfolio products**      |           |          |              |                                                                                             |
-| `PRODUCT_<SYMBOL>_ISIN`     | `string`  | ✓        |              | ISIN identifier for the product. (see [ISIN])                                               |
-| `PRODUCT_<SYMBOL>_EXCHANGE` | `number`  | ✓        |              | ID of the exchange to buy the product from (e.g. EAM: 200 or NSY: 676). (see [Exchange ID]) |
-| `PRODUCT_<SYMBOL>_RATIO`    | `number`  | ✓        |              | Desired relative ratio allocation for the product in your portfolio. (see [Ratios])         |
-| **Run settings**            |           |          |              |                                                                                             |
-| `SCHEDULE`                  | `string`  | ✓        | `0 12 * * *` | Cron schedule for when to run the tool (see [Schedule]).                                    |
-| `RUN_ON_LAUNCH`             | `boolean` | ✓        | `false`      | If `true`, immediately run on launch instead of waiting for schedule. Use with caution!     |
-| `DRY_RUN`                   | `boolean` | ✓        | `true`       | If `true`, no actual orders are placed. Only set to `false` if you are done testing!        |
-| `LOG_LEVEL`                 | `string`  | ✓        | `info`       | Logging level (e.g. `error`, `warning`, `info` or `debug`).                                 |
-| `TZ`                        | `string`  | ✗        | `UTC`        | Time zone identifier used by the logs and cron schedule. For example `Europe/Amsterdam`.    |
+| Name                        | Type      | Required | Default      | Description                                                                              |
+| --------------------------- | --------- | -------- | ------------ | ---------------------------------------------------------------------------------------- |
+| **Credentials**             |           |          |              |                                                                                          |
+| `DEGIRO_USERNAME`           | `string`  | ✓        |              | Username of your DEGIRO account.                                                         |
+| `DEGIRO_PASSWORD`           | `string`  | ✓        |              | Password of your DEGIRO account (use .env or Docker Secrets!).                           |
+| `DEGIRO_TOTP_SEED`          | `string`  | ✗        |              | The TOTP seed (optional) for two-factor authentication (use .env or Docker Secrets!).    |
+| **Broker settings**         |           |          |              |                                                                                          |
+| `MIN_CASH_INVEST`           | `number`  | ✓        | `100`        | Minimum total order amount in cash for a single run.                                     |
+| `MAX_CASH_INVEST`           | `number`  | ✓        | `2000`       | Maximum total order amount in cash for a single run.                                     |
+| `MAX_FEE_PERCENTAGE`        | `number`  | ✗        |              | Maximum fee in percent of order amount to prevent high fees on small orders.             |
+| `ALLOW_OPEN_ORDERS`         | `boolean` | ✓        | `false`      | If `false`, do not place orders if there are open orders in your account.                |
+| `USE_LIMIT_ORDER`           | `boolean` | ✓        | `true`       | If `true`, use limit orders. If `false`, use market orders.                              |
+| `CASH_CURRENCY`             | `string`  | ✓        | `EUR`        | Currency of cash in your DEGIRO account (3-letter code seen next to the cash balance).   |
+| **Portfolio products**      |           |          |              |                                                                                          |
+| `PRODUCT_<SYMBOL>_ISIN`     | `string`  | ✓        |              | ISIN identifier for the product. (see [ISIN])                                            |
+| `PRODUCT_<SYMBOL>_EXCHANGE` | `number`  | ✓        |              | ID of the exchange to order the product from. (see [Exchange ID])                        |
+| `PRODUCT_<SYMBOL>_RATIO`    | `number`  | ✓        |              | Desired relative ratio allocation for the product in your portfolio. (see [Ratios])      |
+| **Run settings**            |           |          |              |                                                                                          |
+| `SCHEDULE`                  | `string`  | ✓        | `0 12 * * *` | Cron schedule for when to run the tool (see [Schedule]).                                 |
+| `RUN_ON_LAUNCH`             | `boolean` | ✓        | `false`      | If `true`, immediately run on launch instead of waiting for schedule. Use with caution!  |
+| `DRY_RUN`                   | `boolean` | ✓        | `true`       | If `true`, no actual orders are placed. Only set to `false` if you are done testing!     |
+| `LOG_LEVEL`                 | `string`  | ✓        | `info`       | Logging level (e.g. `error`, `warning`, `info` or `debug`).                              |
+| `TZ`                        | `string`  | ✗        | `UTC`        | Time zone identifier used by the logs and cron schedule. For example `Europe/Amsterdam`. |
 
 ### Portfolio
 
 The tool uses the products configuration to build the desired portfolio and place product orders automatically.
-In the examples below, `VWRL` on the `EAM` exchange is used as an example product.
+In the examples below, `VGLA` (a.k.a. `VALL`) on the `TDG` exchange is used as an example product.
+
+This product is used as an example because it is a cheap global index tracker in the [Core Selection], which has the lowest fees and costs (when traded during primary exchange hours, see [Tradegate] info).
+Because the primary use case of this tool is to passively, periodically, consistently invest in a broad market without emotion (see [Periodic Investing] or [Dollar Cost Averaging]).
+
+#### Requirements
+
+- At least 1 product must be specified in the portfolio. There is no maximum number of products, as long as the keys (symbols) are unique.
+- All portfolio products have to be owned beforehand in your existing portfolio. This acts as an extra safety measure to always order the intended product.
+  If a configured product is not already present in your owned portfolio, the run will be cancelled.
+- If there are any other products in your owned portfolio that are not in your configuration, they will be ignored and treated as if they don't exist.
+
+#### Rebalancing
+
+When multiple products are defined in the portfolio, rebalancing will happen automatically.
+It works by increasing the order for a product which is underrepresented in the current portfolio ratio.
+It will never sell a position which is overrepresented.
+
+If ordering a proportional position of multiple products exceeds the maximum fee percentage for any order (if the `MAX_FEE_PERCENTAGE` is defined),
+the order with the highest fee percentage will be excluded and the remaining products will be divided according to the target ratio, resulting in larger orders.
+This process will happen until there are no more orders above the maximum fee percentage or no more products are left.
+This results in smaller and relatively more expensive orders will be postponed until the next run,
+because of the under-representation from the previous omission the resulting larger order size will result in lower combined fees.
+
+And if only a single product is defined, the logic above simply invests the maximum quantity of that product within the fee and cash limits defined in the configuration.
 
 #### Examples
 
 The products of the desired portfolio are configured as a list of environment variables with the symbol as the key for each config.
-A couple of notes:
 
-- At least 1 product must be specified in the portfolio. There is no maximum number of products, as long as the keys (symbols) are unique.
-- All portfolio products have to be owned beforehand in your existing portfolio. This acts as an extra safety measure.
-  If a configured product is not already present in your owned portfolio, the run will be cancelled.
-- If there are any other products in your owned portfolio that are not in your configuration, they will be ignored and treated as if they don't exist.
-
-Example with a single product (`VWRL`):
+Example with a single product (`VGLA`):
 
 ```yaml
-PRODUCT_VWRL_ISIN: IE00B3RBWM25
-PRODUCT_VWRL_EXCHANGE: 200
-PRODUCT_VWRL_RATIO: 100
+PRODUCT_VGLA_ISIN: IE000VAHT5T0
+PRODUCT_VGLA_EXCHANGE: 196
+PRODUCT_VGLA_RATIO: 100
 ```
 
 Example with multiple products (`IWDA` and `IEMA`):
@@ -140,32 +161,47 @@ However, it is useful to set the ratios to the exact percentages adding up to 10
 #### Symbol
 
 The symbol (or [ticker]) is the 1 to 5 character long code that describes a financial product on an exchange.
-For example the code for `Vanguard FTSE All-World UCITS ETF USD Dis` on the `EAM` exchange is `VWRL`. It is listed on the details page and next to the product.
+For example the code for `Vanguard FTSE Global All-Cap UCITS ETF USD Acc` on the `TDG` exchange is `VGLA`. It is listed on the details page and next to the product.
 
 #### ISIN
 
-The [ISIN code] is the 12 character long code that describes the exact financial product on an exchange.
-For example the code for `VWRL` on the `EAM` exchange is `IE00B3RBWM25`. It is listed on the details page and next to the product.
+The [ISIN code] is the 12 character long code that describes the exact financial product across exchanges.
+For example the code for `VGLA` is `IE000VAHT5T0`. It is listed on the details page and next to the product.
 
 #### Exchange ID
 
 The exact same product can often be bought on different [exchanges].
-So in order to specify which one, a couple of steps are needed.
+So in order to specify which one, an exchange ID is needed.
 The exchange ID is the same for all products on the same exchange, so you only need to look this up once per exchange.
+
+Below is a table with the ID's of common exchanges:
+
+| Code | Name                    | ID  |
+| ---- | ----------------------- | --- |
+| TDG  | Tradegate AG            | 196 |
+| EAM  | Euronext Amsterdam      | 200 |
+| XET  | Xetra                   | 194 |
+| MIL  | Euronext Milan          | 608 |
+| LSE  | London Stock Exchange   | 570 |
+| NSY  | New York Stock Exchange | 676 |
+| NDQ  | Nasdaq                  | 663 |
+
+If the exchange is not listed there, use these steps to find it manually:
 
 1. On the DEGIRO website, open DevTools by pressing `F12` and navigate to the Network tab to see requests.
 2. Now search the product by symbol (ticker) or ISIN in the search bar in the top left.
 3. Look for a request like this `https://trader.degiro.nl/productsearch/secure/v1/lookup?searchText=IE00B3RBWM25`, and view the response data.
 4. Click on the product on the exchange you want.
 5. Confirm that the exchange is the one you want on the details page of the product.
-6. Take note of the product ID (in this case `4586985`) by looking at the URL on the details page `https://trader.degiro.nl/trader/#/products/4586985/overview`.
-7. Look up the product ID in the open request response data from step 3 and copy the exchange ID (`exchangeId`). In this case `200` for `EAM`, Euronext Amsterdam.
+6. Take note of the product ID (in this case `108509981`) by looking at the URL on the details page `https://trader.degiro.nl/trader/#/products/108509981/overview`.
+7. Look up the product ID in the open request response data from step 3 and copy the exchange ID (`exchangeId`). In this case `196` for `TDG`, Tradegate AG.
 
 ### Schedule
 
-The `SCHEDULE` environment variable defines when the tool runs and attempts to buy products.
-It is not a problem if the schedule triggers more than necessary, as the tool will first check the cash amount before buying products.
-However, running it sparsely reduces log noise and is useful when you want to avoid buying at certain times or dates.
+The `SCHEDULE` environment variable defines when the tool runs and attempts to order products.
+It is not a problem if the schedule triggers more than necessary, as the tool will first check the cash amount before ordering products.
+However, running it sparsely reduces log noise and is useful when you want to avoid ordering at certain times or dates.
+Such as to place orders on the [Tradegate] exchange only on opening hours of primary exchanges to reduce spread costs.
 
 The schedule uses the [cron syntax] with some additional features. See the [Croner docs] for pattern specifications.
 Legacy cron syntax has been disabled in Croner to allow for more complex schedules (see the examples).
@@ -177,7 +213,7 @@ Below are a few example schedules:
 | ------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
 | `0 12 * * *`                                      | Every day at 12:00 (default)                                                                       |
 | `0 10,14 1 * *`                                   | On the 1st of every month at 10:00 and 14:00                                                       |
-| `0 8-17 * * mon-fri`                              | Every weekday, every hour from 8:00 to 17:00                                                       |
+| `0 10-17 * * mon-fri`                             | Every weekday, every hour from 10:00 to 17:00                                                      |
 | `0 12 * * mon#1`                                  | First Monday of the month at 12:00                                                                 |
 | `0 12 26-28 jan-nov mon-fri;0 12 2-4 jan mon-fri` | From the 26th to 28th of January to November and the 2nd to 4th of January at 12:00, weekdays only |
 
@@ -275,6 +311,10 @@ pnpm start
 [mit license]: https://github.com/dkempen/degiromatic?tab=MIT-1-ov-file
 [`compose.yaml`]: compose.yaml
 [schedule]: #schedule
+[Core Selection]: https://www.degiro.nl/tarieven/etf-kernselectie
+[Tradegate]: https://www.degiro.nl/helpdesk/handelsmogelijkheden/waarom-handelen-op-de-tradegate-exchange
+[Periodic Investing]: https://www.degiro.nl/leren-beleggen/strategieen/periodiek-beleggen
+[Dollar Cost Averaging]: https://www.degiro.nl/leren-beleggen/strategieen/dollar-cost-averaging
 [isin]: #isin
 [exchange id]: #exchange-id
 [ratios]: #ratios

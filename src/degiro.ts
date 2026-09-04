@@ -138,7 +138,7 @@ export class Degiro {
       requestid: '1',
       resolution: 'PT1M',
       period: 'P1D',
-      series: `issueid:${vwdId}`,
+      series: /^\d+$/.test(vwdId) ? `issueid:${vwdId}` : `vwdkey:${vwdId}`,
       format: 'json',
       userToken: `${this.accountId}`,
     });

@@ -142,8 +142,8 @@ export class Degiro {
       format: 'json',
       userToken: `${this.accountId}`,
     });
-    const headers = { Origin: 'https://trader.degiro.nl/' };
     const url = `${host}${endpoint}?${params}`;
+    const headers = { referrer: 'https://trader.degiro.nl/' };
     const response = await fetch(url, { headers });
 
     interface MarketApiResult {

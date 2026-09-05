@@ -3,14 +3,14 @@ import { SearchProductResultType } from 'degiro-api/dist/types';
 import { Configuration, Product } from './config';
 import { Degiro, OwnedProduct } from './degiro';
 
-export class Buyer {
+export class Runner {
   constructor(
     private logger: Logger,
     private configuration: Configuration,
     private degiro: Degiro
   ) {}
 
-  public async buy(): Promise<void> {
+  public async run(): Promise<void> {
     // Calculate ratio's for desired portfolio
     const totalRatio = this.configuration.portfolio.reduce((sum, product) => sum + product.ratio, 0);
     this.configuration.portfolio.forEach((product) => (product.ratio = product.ratio / totalRatio));
@@ -28,7 +28,7 @@ export class Buyer {
     // Get cash funds
     const cash = await this.degiro.getCashFunds(this.configuration.cashCurrency);
 
-    // If cash funds is not high enough, don't buy anything
+    // If cash funds is not high enough, don't place orders
     if (cash < this.configuration.minCashInvest) {
       this.logger.info(
         `Cash in account (${cash} ${this.configuration.cashCurrency}) ` +

@@ -1,8 +1,8 @@
 import { Logger } from '@logtape/logtape';
 import { Cron } from 'croner';
-import { Buyer } from './buyer';
 import { Configuration } from './config';
 import { logError } from './logger';
+import { Runner } from './runner';
 
 export class Scheduler {
   private jobs!: Cron[];
@@ -11,7 +11,7 @@ export class Scheduler {
   constructor(
     private logger: Logger,
     private configuration: Configuration,
-    private buyer: Buyer
+    private runner: Runner
   ) {
     this.gracefulShutdown();
     this.startScheduler();
@@ -62,7 +62,7 @@ export class Scheduler {
       if (this.configuration.dryRun) {
         this.logger.info('Running in dry run mode, no orders will be placed');
       }
-      await this.buyer.buy();
+      await this.runner.run();
       this.logger.info('DEGIROmatic run finished\n');
     } catch (error) {
       logError(this.logger, error);

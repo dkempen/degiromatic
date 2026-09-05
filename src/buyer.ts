@@ -11,8 +11,6 @@ export class Buyer {
   ) {}
 
   public async buy(): Promise<void> {
-    this.logger.info('Started DEGIROmatic');
-
     // Calculate ratio's for desired portfolio
     const totalRatio = this.configuration.portfolio.reduce((sum, product) => sum + product.ratio, 0);
     this.configuration.portfolio.forEach((product) => (product.ratio = product.ratio / totalRatio));
@@ -106,7 +104,7 @@ export class Buyer {
       }
 
       const transactionFee = await this.degiro.getTransactionFee(searchedProduct.id);
-      const price = await this.degiro.getPrice(searchedProduct.vwdId);
+      const price = await this.degiro.getPrice(searchedProduct.vwdIdentifierType, searchedProduct.vwdId);
 
       if (!price) {
         throw new Error(`Could not find price for product ${product.symbol} (${product.isin})`);
@@ -262,7 +260,7 @@ export class Buyer {
         `${this.configuration.dryRun ? 'Placed simulated' : 'Successfully placed'} ` +
           `${this.configuration.useLimitOrder ? 'limit' : 'market'} order ` +
           `for ${order.quantity} * ${order.product.symbol} (${order.product.isin}) ` +
-          `at ${order.product.closePrice.toFixed(2)} ${order.product.currency} for a total of ` +
+          `at ${order.product.closePrice.toFixed(4).replace(/0{1,2}$/, '')} ${order.product.currency} for a total of ` +
           `${(order.product.closePrice * order.quantity).toFixed(2)} ${order.product.currency} (id: ${confirmationId})`
       );
     }

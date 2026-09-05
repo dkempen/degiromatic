@@ -21,13 +21,16 @@ export class Scheduler {
   private startScheduler() {
     const schedules = this.configuration.schedule.split(';').map((schedule) => schedule.trim());
     const settings = { legacyMode: false, interval: 60 };
+
     try {
-      this.jobs = schedules.map((schedule) => new Cron(schedule, settings, () => this.buy()));
+      this.jobs = schedules.map((schedule) => new Cron(schedule, settings, () => this.run()));
     } catch {
       this.logger.error(`Invalid cron schedule "${this.configuration.schedule}"`);
       process.exit(1);
     }
-    this.logger.info(`Started DEGIROmatic with cron schedule "${schedules.join('" and "')}"`);
+
+    const dryMode = this.configuration.dryRun ? ' in dry run mode' : '';
+    this.logger.info(`Started DEGIROmatic${dryMode} with cron schedule "${schedules.join('" and "')}"`);
     this.logNextRunTime();
   }
 
@@ -48,13 +51,17 @@ export class Scheduler {
     });
   }
 
-  private async buy() {
+  private async run() {
     if (this.running) {
       return;
     }
 
     try {
       this.running = true;
+      this.logger.info('DEGIROmatic run started');
+      if (this.configuration.dryRun) {
+        this.logger.info('Running in dry run mode, no orders will be placed');
+      }
       await this.buyer.buy();
       this.logger.info('DEGIROmatic run finished\n');
     } catch (error) {

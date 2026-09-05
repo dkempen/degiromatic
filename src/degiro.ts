@@ -131,14 +131,14 @@ export class Degiro {
     }
   }
 
-  public async getPrice(vwdId: string): Promise<number | undefined> {
+  public async getPrice(vwdType: string, vwdId: string): Promise<number | undefined> {
     const host = 'https://charting.vwdservices.com/';
     const endpoint = 'hchart/v1/deGiro/data.js';
     const params = new URLSearchParams({
       requestid: '1',
       resolution: 'PT1M',
       period: 'P1D',
-      series: /^\d+$/.test(vwdId) ? `issueid:${vwdId}` : `vwdkey:${vwdId}`,
+      series: `${vwdType}:${vwdId}`,
       format: 'json',
       userToken: `${this.accountId}`,
     });

@@ -9,14 +9,13 @@ RUN pnpm i --frozen-lockfile --offline
 COPY . .
 RUN pnpm run bundle && pnpm pack-app --entry dist/bundle/main.cjs --target "linux-$(node -p "process.arch")-musl"
 RUN BIN="$(find /app/dist-app -type f -name degiromatic -print -quit)" && \
-    install -D "$BIN" /runtime/bin/degiromatic && \
+    install -D "$BIN" /degiromatic/bin/degiromatic && \
     ldd "$BIN" | awk '{print $3}' | grep '^/' | while read -r lib; do \
-        install -D "$lib" "/runtime$lib"; \
+        install -D "$lib" "/degiromatic$lib"; \
     done
 
 FROM scratch AS run
 
-ENV DATA_DIR=/data NODE_ENV=production NODE_NO_WARNINGS=1
-COPY --from=build /runtime /
+COPY --from=build /degiromatic /
 
 ENTRYPOINT ["/bin/degiromatic"]

@@ -3,4 +3,4 @@
 !package.json
 !pnpm-*.yaml
 !tsconfig.json
-!bundle
+!rollup.config.ts

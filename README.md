@@ -17,10 +17,10 @@ Automated and passive ETF and stock portfolio investing via the DEGIRO broker.
 - **Portfolio** - Define your ETFs or stocks portfolio with a target allocation ratio.
 - **Rebalancing** - Finds the optimal way to rebalance your portfolio with new orders to match your target allocation.
 - **Limits** - Set limits for maximum and minimum order amounts, and maximum fees.
-- **Scheduling** - Run monthly, weekly, daily, or anything in between on a custom schedule. Making periodic investing easy.
+- **Scheduling** - Run monthly, weekly, daily, or on any custom schedule. Making periodic investing easy.
 - **Logging** - All decisions and orders are logged in the console and log file for monitoring and transparency.
 - **Dry run** - Use dry run mode to test and review before placing real orders.
-- **Secure** - The container image runs rootless and distroless, and ships only a single binary. Along with other security measures.
+- **Secure** - The container runs rootless and distroless, with only a single binary and other security measures.
 - **Private** - Fully local, self-hosted, zero telemetry, only connects to DEGIRO directly.
 - **Transparent** - The code is fully open source, the Docker image is built on GitHub Actions with attestations.
 
@@ -123,6 +123,7 @@ It will never sell a position which is overrepresented.
 
 If ordering a proportional position of multiple products exceeds the maximum fee percentage for any order (if the `MAX_FEE_PERCENTAGE` is defined),
 the order with the highest fee percentage will be excluded and the remaining products will be divided according to the target ratio, resulting in larger orders.
+For example, with a `MAX_FEE_PERCENTAGE` of `1`, an order of €150 with a €3 dollar fee (so a `2%` fee of the order), will be excluded.
 This process will happen until there are no more orders above the maximum fee percentage or no more products are left.
 This results in smaller and relatively more expensive orders will be postponed until the next run,
 because of the under-representation from the previous omission the resulting larger order size will result in lower combined fees.
@@ -172,7 +173,7 @@ For example the code for `VGLA` is `IE000VAHT5T0`. It is listed on the details p
 
 The exact same product can often be bought on different [exchanges].
 So in order to specify which one, an exchange ID is needed.
-The exchange ID is the same for all products on the same exchange, so you only need to look this up once per exchange.
+The exchange ID is the same for all products on the same exchange.
 
 Below is a table with the ID's of common exchanges:
 
@@ -199,9 +200,9 @@ If the exchange is not listed there, use these steps to find it manually:
 ### Schedule
 
 The `SCHEDULE` environment variable defines when the tool runs and attempts to order products.
-It is not a problem if the schedule triggers more than necessary, as the tool will first check the cash amount before ordering products.
-However, running it sparsely reduces log noise and is useful when you want to avoid ordering at certain times or dates.
-Such as to place orders on the [Tradegate] exchange only on opening hours of primary exchanges to reduce spread costs.
+It is not a problem if the schedule triggers more often than necessary, as the tool will first check the available cash before ordering products.
+However, running it less frequently reduces log noise and is useful for avoiding orders at certain times or on certain dates.
+For example, orders can be placed on the [Tradegate] exchange only during the opening hours of the primary exchanges to reduce spread costs.
 
 The schedule uses the [cron syntax] with some additional features. See the [Croner docs] for pattern specifications.
 Legacy cron syntax has been disabled in Croner to allow for more complex schedules (see the examples).
@@ -278,8 +279,7 @@ cap_drop:
 
 ### Network restrictions
 
-Ingress and egress network traffic can be disabled entirely.
-With the exception for 2 outbound domains needed for the tool to function:
+Ingress and egress network traffic can be disabled entirely, with the exception of two outbound domains required for the tool to function:
 `trader.degiro.nl` for placing orders, and `charting.vwdservices.com` for real-time financial product pricing.
 
 ## Development
@@ -288,7 +288,7 @@ With the exception for 2 outbound domains needed for the tool to function:
 2. Install [pnpm].
 3. Clone this repository.
 4. Copy [`example.env`] to `.env` and update the configuration.
-5. Install dependencies and run:
+5. Start:
 
 ```shell
 pnpm start

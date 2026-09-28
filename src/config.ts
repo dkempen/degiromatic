@@ -96,7 +96,7 @@ export class ConfigurationLoader {
 export interface Configuration {
   degiroUsername: string;
   degiroPassword: string;
-  degiroTotpSeed: string;
+  degiroTotpSeed?: string;
   minCashInvest: number;
   maxCashInvest: number;
   maxFeePercentage?: number;

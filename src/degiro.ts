@@ -10,9 +10,9 @@ import {
 import { DeGiroSettupType as DeGiroSetupType, OrderType, SearchProductResultType } from 'degiro-api/dist/types';
 import fs from 'fs';
 import path from 'path';
-import speakeasy from 'speakeasy';
 import { Configuration } from './config';
 import { DATA_DIRECTORY, SESSION_FILE } from './constants';
+import { generateTotp } from './totp';
 
 export class Degiro {
   private degiro!: DeGiro;
@@ -31,7 +31,7 @@ export class Degiro {
     const loginDetails: DeGiroSetupType = {
       username: this.configuration.degiroUsername,
       pwd: this.configuration.degiroPassword,
-      oneTimePassword: this.getOTP(this.configuration.degiroTotpSeed),
+      oneTimePassword: this.configuration.degiroTotpSeed ? generateTotp(this.configuration.degiroTotpSeed) : undefined,
     };
     this.degiro = new DeGiro({ ...loginDetails, jsessionId: this.session });
 
@@ -177,10 +177,6 @@ export class Degiro {
         this.logger.debug(`Session file not used because file system is read only and not volume mapped: ${error}`);
       }
     }
-  }
-
-  private getOTP(secret?: string): string | undefined {
-    return secret ? speakeasy.totp({ secret, encoding: 'base32' }) : undefined;
   }
 }
 
